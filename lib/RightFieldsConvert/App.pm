@@ -10,9 +10,8 @@ sub list_entry_mini {
         blog_id => $blog_id,
     });
 
-
-    my $plugin = MT->component('rf2cf6a');
-    my $tmpl = $plugin->load_tmpl('list_entry_mini.mtml');
+    my $plugin = MT->component('RightFieldsConvert') or die "OMG NO COMPONENT!?!";
+    my $tmpl = $plugin->load_tmpl('entry_list.mtml');
     return $app->listing({
         type => 'entry',
         template => $tmpl,

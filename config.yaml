@@ -1,6 +1,6 @@
 name: Convert RightFields to Custom Fields
-id:   rf2cf6a
-key:  rf2cf6a
+id:   RightFieldsConvert
+key:  RightFieldsConvert
 
 author_name: Six Apart, Ltd.
 author_link: http://www.sixapart.com/
@@ -8,9 +8,9 @@ author_link: http://www.sixapart.com/
 applications:
     cms:
         methods:
-            list_entry_mini: $rf2cf6a::RightFieldsConvert::App::list_entry_mini
-            select_entry:    $rf2cf6a::RightFieldsConvert::App::select_entry
-            convert_rf2cf:   $rf2cf6a::RightFieldsConvert::App::convert_rf2cf
+            list_entry_mini: $RightFieldsConvert::RightFieldsConvert::App::list_entry_mini
+            select_entry:    $RightFieldsConvert::RightFieldsConvert::App::select_entry
+            convert_rf2cf:   $RightFieldsConvert::RightFieldsConvert::App::convert_rf2cf
 
 customfield_types:
     entry:
@@ -52,7 +52,7 @@ customfield_types:
             <div class="actions-bar" style="clear: none">
                 <div class="actions-bar-inner pkg actions">
                     <button type="submit"
-                        onclick="return openDialog(this.form, 'list_entries', 'blog_id=<mt:var name="blog_id">')"
+                        onclick="return openDialog(this.form, 'list_entry_mini', 'blog_id=<mt:var name="blog_id">')"
                         ><__trans phrase="Choose Entry"></button>
                     <mt:unless name="required">
                         <button type="submit"
