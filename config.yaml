@@ -41,7 +41,7 @@ customfield_types:
             </mt:unless>
             <input name="<mt:var name="field_name">" id="<mt:var name="field_id">" class="hidden" type="hidden" value="<mt:var name="value" escape="html">" />
             <div id="<mt:var name="field_id">_preview" class="customfield_preview">
-                <mt:var name="value">
+                <mt:var name="preview">
             </div>
             <div class="actions-bar" style="clear: none">
                 <div class="actions-bar-inner pkg actions">
@@ -52,10 +52,11 @@ customfield_types:
                         <button type="submit"
                             id="<mt:var name="field_id">_remove_entry"
                             <mt:unless name="value">class="hidden"</mt:unless>
-                            onclick="insertCustomFieldAsset('', '<mt:var name="field_id" escape="JS">'); return false"
+                            onclick="insertCustomFieldEntry('', '', '<mt:var name="field_id" escape="JS">'); return false"
                             ><__trans phrase="Remove Entry"></button>
                     </mt:unless>
                 </div>
             </div>
+        field_html_params: sub { my $e = MT->model('entry')->load($_[2]->{value}); $_[2]->{preview} = $e->title if $e; }
         column_def: vchar_idx
 
