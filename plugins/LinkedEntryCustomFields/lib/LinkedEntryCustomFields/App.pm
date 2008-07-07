@@ -1,5 +1,5 @@
 
-package RightFieldsConvert::App;
+package LinkedEntryCustomFields::App;
 use strict;
 use warnings;
 
@@ -19,7 +19,7 @@ sub inject_addl_field_settings {
     return 1 if $param->{type} && $param->{type} ne 'entry';
 
     # Inject settings template code.
-    my $addl_settings = MT->component('RightFieldsConvert')->load_tmpl('addl_settings.mtml');
+    my $addl_settings = MT->component('LinkedEntryCustomFields')->load_tmpl('addl_settings.mtml');
     my $new_node = $tmpl->createElement('section');
     $new_node->innerHTML($addl_settings->text);
     $tmpl->insertAfter($new_node, $tmpl->getElementById('options'));
@@ -72,7 +72,7 @@ sub list_entry_mini {
         });
     }
 
-    my $plugin = MT->component('RightFieldsConvert') or die "OMG NO COMPONENT!?!";
+    my $plugin = MT->component('LinkedEntryCustomFields') or die "OMG NO COMPONENT!?!";
     my $tmpl = $plugin->load_tmpl('entry_list.mtml');
     return $app->listing({
         type => 'entry',
@@ -113,7 +113,7 @@ sub select_entry {
     my $edit_field = $app->param('edit_field')
         or return $app->errtrans('No edit_field');
 
-    my $plugin = MT->component('RightFieldsConvert') or die "OMG NO COMPONENT!?!";
+    my $plugin = MT->component('LinkedEntryCustomFields') or die "OMG NO COMPONENT!?!";
     my $tmpl = $plugin->load_tmpl('select_entry.mtml', {
         entry_id    => $entry->id,
         entry_title => $entry->title,
