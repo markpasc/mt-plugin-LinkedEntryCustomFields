@@ -54,11 +54,15 @@ sub presave_field {
 
 sub list_entry_mini {
     my $app = shift;
-    my (%terms, %args);
 
     my $blog_id = $app->param('blog_id')
         or return $app->errtrans('No blog_id');
-    $terms{blog_id} = $blog_id;
+
+    my %terms = ( blog_id => $blog_id );
+    my %args = (
+        sort      => 'authored_on',
+        direction => 'descend',
+    );
 
     if (my $cats = $app->param('cat_ids')) {
         my @cats = split /\s*,\s*/, $cats;
