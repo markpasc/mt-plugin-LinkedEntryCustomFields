@@ -1,3 +1,25 @@
+<script type="text/javascript">
+changeType = (function () {
+    var oldChangeType = changeType;
+    return function (s) {
+        if(!s)
+            s = document.getElementById('type');
+        oldChangeType(s);
+        
+        var type_key = s.<mt:if name="new_object">options[s.selectedIndex].</mt:if>value;
+        
+        if (type_key == 'entry') {
+            DOM.removeClassName('field_blog-field', 'hidden');
+            DOM.removeClassName('field_categories-field', 'hidden');
+        }
+        else {
+            DOM.addClassName('field_blog-field', 'hidden');
+            DOM.addClassName('field_categories-field', 'hidden');
+        }
+    };
+})();
+</script>
+
 <mtapp:setting id="field_blog" label="Blog"><select id="field_blog">
     <mt:Loop name="blogs">
         <option value="<mt:var name="blog_id">"<mt:if name="blog_selected"> selected="selected"</mt:if>><mt:var name="blog_name" escape="html"></option>
@@ -9,4 +31,3 @@
     show_hint="1">
     <input id="field_categories" value="<mt:var name="field_categories">">
 </mtapp:setting>
-
