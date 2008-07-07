@@ -85,18 +85,20 @@
     <div class="list-wrapper" style="position: relative;">
     <div class="selector listing" id="selector">
         <form action="" method="get" onsubmit="return false">
-            <table cellspacing="0" class="list-heading <mt:unless name="edit_blog_id">show-weblog </mt:unless><mt:if name="view_expanded">expanded<mt:else>compact</mt:if>">
+            <table cellspacing="0" class="list-heading entry-listing-table <mt:unless name="edit_blog_id">show-weblog </mt:unless><mt:if name="view_expanded">expanded<mt:else>compact</mt:if>">
                 <thead>
                     <tr>
                         <th class="cb"><img src="<mt:var name="static_uri">images/spacer.gif" width="15" height="1"></th>
-                        <th class="status">
+                        <th class="status si">
                             <img src="<mt:var name="static_uri">images/status_icons/invert-flag.gif" alt="<__trans phrase="Status">" title="<__trans phrase="Status">" width="9" height="9" />
                         </th>
-                        <th class="panel-label"><__trans phrase="Title"></th>
+                        <th class="title"><__trans phrase="Title"></th>
         <mt:unless name="edit_blog_id">
                         <th id="as-weblog"><__trans phrase="Blog"></th>
         </mt:unless>
-                        <th class="panel-description"><span class="detail"><__trans phrase="Size"></span></th>
+                        <th class="author"><__trans phrase="Author"></th>
+                        <th class="date"><__trans phrase="Created"></th>
+                        <th class="view si"><span><__trans phrase="View"></span></th>
                     </tr>
                 </thead>
             </table>
@@ -109,24 +111,22 @@
     <mt:loop name="object_loop">
                             <tr id="entry-<mt:var name="id">" class="<mt:if name="__odd__">odd<mt:else>even</mt:if>">
                                 <td class="cb"><input type="hidden" id="entry-<mt:var name="id">-json" value="<mt:var name="metadata_json" escape="html">" /><input type="radio" name="id" value="<mt:var name="id">" class="select" id="entry-radio-<mt:var name="id">" /></td>
-                                <td class="status-<mt:if name="status_draft">draft<mt:elseif name="status_publish">publish<mt:elseif name="status_review">review<mt:elseif name="status_future">future</mt:if>"><img src="<mt:var name="static_uri">images/spacer.gif" alt="<mt:if name="status_draft"><__trans phrase="Unpublished (Draft)"><mt:elseif name="status_publish"><__trans phrase="Published"><mt:elseif name="status_review"><__trans phrase="Unpublished (Review)"><mt:elseif name="status_future"><__trans phrase="Scheduled"></mt:if>" width="9" height="9" /></td>
-                                <td class="panel-label">
-                                    <$mt:var name="title" escape="html"$>
+                                <td class="status si status-<mt:if name="status_draft">draft<mt:elseif name="status_publish">publish<mt:elseif name="status_review">review<mt:elseif name="status_future">future</mt:if>"><img src="<mt:var name="static_uri">images/spacer.gif" alt="<mt:if name="status_draft"><__trans phrase="Unpublished (Draft)"><mt:elseif name="status_publish"><__trans phrase="Published"><mt:elseif name="status_review"><__trans phrase="Unpublished (Review)"><mt:elseif name="status_future"><__trans phrase="Scheduled"></mt:if>" width="9" height="9" /></td>
+                                <td class="title"><$mt:var name="title" escape="html"$></td>
+                                <td class="author"><mt:var name="author_name" escape="html"></td>
+                                <td class="date">
+                                    <mt:if name="created_on_relative" and="dates_relative">
+                                        <mt:var name="created_on_relative">
+                                    <mt:else>
+                                        <mt:var name="created_on_formatted">
+                                    </mt:if>
                                 </td>
-        <mt:unless name="edit_blog_id">
-                                <td class="detail"><a href="<mt:var name="script_url">?__mode=list_entry_mini&amp;blog_id=<mt:var name="blog_id">"><mt:var name="blog_name" escape="html"></a></td>
-        </mt:unless>
-                                <td class="panel-description">
-                                    <span class="detail">
-        <mt:if name="file_size_formatted">
-                                        <span class="float_desc" title="<mt:var name="file_size">"><mt:var name="file_size_formatted"></span>
-        <mt:else>
-                                        <span class="float_desc"><mt:var name="file_size"></span>
-        </mt:if>
-                                        <span class="link">
-                                            <mt:if name="url"><a href="<mt:var name="url">" target="view_uploaded" title="<__trans phrase="View Entry">"><img src="<mt:var name="static_uri">images/spacer.gif" alt="<__trans phrase="View Entry">" width="13" height="9" /></a><mt:else>&nbsp;</mt:if>
-                                        </span>
-                                    </span>
+                                <td class="view si status-view">
+                                    <mt:if name="entry_permalink">
+                                        <a href="<mt:var name="entry_permalink">" target="<__trans phrase="_external_link_target">" title="<__trans phrase="View entry">"><img src="<mt:var name="static_uri">images/spacer.gif" alt="<__trans phrase="View entry">" width="13" height="9" /></a>
+                                    <mt:else>
+                                        &#160;
+                                    </mt:if>
                                 </td>
                             </tr>
     </mt:loop>

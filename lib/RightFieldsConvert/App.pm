@@ -1,6 +1,8 @@
 
 package RightFieldsConvert::App;
 
+use MT::Util qw( format_ts relative_date );
+
 sub field_html_params {
     my ($field_type, $tmpl_type, $param) = @_;
     if ($param->{value}) {
@@ -76,6 +78,16 @@ sub list_entry_mini {
         code => sub {
             my ($obj, $row) = @_;
             $row->{'status_' . lc MT::Entry::status_text($obj->status)} = 1;
+            $row->{entry_permalink} = $obj->permalink;
+            if (my $ts = $obj->authored_on) {
+                my $date_format = MT::App::CMS->LISTING_DATE_FORMAT();
+                my $datetime_format = MT::App::CMS->LISTING_DATETIME_FORMAT();
+                $row->{created_on_formatted} = format_ts($date_format, $ts, $obj->blog,
+                    $app->user ? $app->user->preferred_language : undef);
+                $row->{created_on_time_formatted} = format_ts($datetime_format, $ts, $obj->blog,
+                    $app->user ? $app->user->preferred_language : undef);
+                $row->{created_on_relative} = relative_date($ts, time, $obj->blog);
+            }
             return $row;
         },
         terms => \%terms,
