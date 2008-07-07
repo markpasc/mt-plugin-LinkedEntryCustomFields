@@ -16,47 +16,6 @@ customfield_types:
     entry:
         label: Entry
         order: 800
-        field_html: >>
-            <mt:unless name="entry_chooser_js">
-                <script type="text/javascript">
-                    function insertCustomFieldEntry(html, val, id) {
-                        getByID(id).value = val;
-
-                        try {
-                            getByID(id + '_preview').innerHTML = html;
-                        } catch(e) {
-                            log.error(e);
-                        };
-
-                        var remove_button = getByID(id + '_remove_entry');
-                        if (remove_button && html) {
-                            TC.removeClassName(getByID(id + '_remove_entry'), 'hidden');
-                        }
-                        else if (remove_button) {
-                            TC.addClassName(getByID(id + '_remove_entry'), 'hidden');
-                        }
-                    }
-                </script>
-                <mt:setvar name="entry_chooser_js" value="1">
-            </mt:unless>
-            <input name="<mt:var name="field_name">" id="<mt:var name="field_id">" class="hidden" type="hidden" value="<mt:var name="value" escape="html">" />
-            <div id="<mt:var name="field_id">_preview" class="customfield_preview">
-                <mt:var name="preview">
-            </div>
-            <div class="actions-bar" style="clear: none">
-                <div class="actions-bar-inner pkg actions">
-                    <button type="submit"
-                        onclick="return openDialog(this.form, 'list_entry_mini', 'blog_id=<mt:var name="blog_id">&amp;edit_field=<mt:var name="field_id" escape="JS">')"
-                        ><__trans phrase="Choose Entry"></button>
-                    <mt:unless name="required">
-                        <button type="submit"
-                            id="<mt:var name="field_id">_remove_entry"
-                            <mt:unless name="value">class="hidden"</mt:unless>
-                            onclick="insertCustomFieldEntry('', '', '<mt:var name="field_id" escape="JS">'); return false"
-                            ><__trans phrase="Remove Entry"></button>
-                    </mt:unless>
-                </div>
-            </div>
+        field_html: <mt:Include name="field_html.mtml" component="RightFieldsConvert">
         field_html_params: sub { my $e = MT->model('entry')->load($_[2]->{value}); $_[2]->{preview} = $e->title if $e; }
         column_def: vchar_idx
-
