@@ -1,6 +1,6 @@
-name: Convert RightFields to Custom Fields
-id:   RightFieldsConvert
-key:  RightFieldsConvert
+name: Linked Entry Custom Fields
+id:   LinkedEntryCustomFields
+key:  LinkedEntryCustomFields
 author_name: Six Apart, Ltd.
 author_link: http://www.sixapart.com/
 version: 1.0
@@ -9,18 +9,18 @@ schema_version: 1
 applications:
     cms:
         methods:
-            list_entry_mini: $RightFieldsConvert::RightFieldsConvert::App::list_entry_mini
-            select_entry:    $RightFieldsConvert::RightFieldsConvert::App::select_entry
-            convert_rf2cf:   $RightFieldsConvert::RightFieldsConvert::App::convert_rf2cf
+            list_entry_mini: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::list_entry_mini
+            select_entry:    $LinkedEntryCustomFields::LinkedEntryCustomFields::App::select_entry
+            convert_rf2cf:   $LinkedEntryCustomFields::LinkedEntryCustomFields::App::convert_rf2cf
         callbacks:
-            template_param.edit_field: $RightFieldsConvert::RightFieldsConvert::App::inject_addl_field_settings
-            cms_pre_save.field: $RightFieldsConvert::RightFieldsConvert::App::presave_field
+            template_param.edit_field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::inject_addl_field_settings
+            cms_pre_save.field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::presave_field
 customfield_types:
     entry:
         label: Entry
         order: 800
-        field_html: <mt:Include name="field_html.mtml" component="RightFieldsConvert">
-        field_html_params: $RightFieldsConvert::RightFieldsConvert::App::field_html_params
+        field_html: <mt:Include name="field_html.mtml" component="LinkedEntryCustomFields">
+        field_html_params: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::field_html_params
         column_def: vchar_idx
         no_default: 1
-tags: $RightFieldsConvert::RightFieldsConvert::App::load_customfield_tags
+tags: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::load_customfield_tags
