@@ -1,0 +1,12 @@
+<mtapp:setting id="field_blog" label="Blog"><select id="field_blog">
+    <mt:Loop name="blogs">
+        <option value="<mt:var name="blog_id">"<mt:if name="blog_selected"> selected="selected"</mt:if>><mt:var name="blog_name" escape="html"></option>
+    </mt:Loop>
+</select></mtapp:setting>
+<mtapp:setting id="field_categories"
+    label="Category IDs"
+    hint="Enter some IDs of categories in the selected blog to limit entries in this field to entries in one of those categories. Separate them with commas."
+    show_hint="1">
+    <input id="field_categories" value="<mt:var name="field_categories">">
+</mtapp:setting>
+

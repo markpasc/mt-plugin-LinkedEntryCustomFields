@@ -1,6 +1,35 @@
 
 package RightFieldsConvert::App;
 
+sub field_html_params {
+    my ($field_type, $tmpl_type, $param) = @_;
+    my $e = MT->model('entry')->load($param->{value});
+    $param->{preview} = $e->title if $e;
+}
+
+sub inject_addl_field_settings {
+    my ($cb, $app, $param, $tmpl) = @_;
+    return 1 if $param->{type} && $param->{type} ne 'entry';
+
+    # Inject settings template code.
+    my $addl_settings = MT->component('RightFieldsConvert')->load_tmpl('addl_settings.mtml');
+    my $new_node = $tmpl->createElement('section');
+    $new_node->innerHTML($addl_settings->text);
+    $tmpl->insertAfter($new_node, $tmpl->getElementById('options'));
+
+    # Add supporting params for our new template code.
+    my ($blog_id, $options_categories) = split /\s*,\s*/, $param->{options}, 2;
+    my @blogs = map { +{
+        blog_id       => $_->id,
+        blog_name     => $_->name,
+        blog_selected => ($_->id == $blog_id ? 1 : 0)
+    } } MT->model('blog')->load();
+    $param->{blogs} = \@blogs;
+    $param->{field_categories} = $options_categories || q{};
+
+    return 1;
+}
+
 sub list_entry_mini {
     my $app = shift;
 

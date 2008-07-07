@@ -11,12 +11,14 @@ applications:
             list_entry_mini: $RightFieldsConvert::RightFieldsConvert::App::list_entry_mini
             select_entry:    $RightFieldsConvert::RightFieldsConvert::App::select_entry
             convert_rf2cf:   $RightFieldsConvert::RightFieldsConvert::App::convert_rf2cf
+        callbacks:
+            template_param.edit_field: $RightFieldsConvert::RightFieldsConvert::App::inject_addl_field_settings
 
 customfield_types:
     entry:
         label: Entry
         order: 800
         field_html: <mt:Include name="field_html.mtml" component="RightFieldsConvert">
-        field_html_params: sub { my $e = MT->model('entry')->load($_[2]->{value}); $_[2]->{preview} = $e->title if $e; }
+        field_html_params: $RightFieldsConvert::RightFieldsConvert::App::field_html_params
         column_def: vchar_idx
         no_default: 1
