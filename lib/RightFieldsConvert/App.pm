@@ -1,5 +1,7 @@
 
 package RightFieldsConvert::App;
+use strict;
+use warnings;
 
 use MT::Util qw( format_ts relative_date );
 
@@ -118,6 +120,67 @@ sub select_entry {
 
 sub convert_rf2cf {
     my $app = shift;
+}
+
+sub _tags_for_field {
+    my ($field) = @_;
+    return if $field->type ne 'entry';
+    my $tag = lc $field->tag;
+    return (
+        "${tag}entry" => sub {
+            my ($ctx, $args, $cond) = @_;
+            local $ctx->{__stash}->{field} = $field;
+
+            # What entry are we after?
+            require CustomFields::Template::ContextHandlers;
+            my $entry_id = CustomFields::Template::ContextHandlers::_hdlr_customfield_value(
+                MT->component('commercial'), @_)
+                or return $ctx->_hdlr_pass_tokens_else($args, $cond);
+            my $entry = MT->model('entry')->load($entry_id)
+                or return $ctx->_hdlr_pass_tokens_else($args, $cond);
+
+            local $ctx->{__stash}->{entries} = [ $entry ];
+            return $ctx->_hdlr_entries($args, $cond);
+        },
+        "${tag}entries" => sub {
+            my ($ctx, $args, $cond) = @_;
+            local $ctx->{__stash}->{field} = $field;
+
+            # What entry is this?
+            my $entry = $ctx->stash('entry')
+                or return $ctx->_no_entry_error();
+            # So what entries are we after?
+            my @entries = MT->model('entry')->search_by_meta('field.'
+                . $field->basename, $entry->id);
+            return $ctx->_hdlr_pass_tokens_else($args, $cond)
+                if !@entries;
+
+            local $ctx->{__stash}->{entries} = \@entries;
+            return $ctx->_hdlr_entries($args, $cond);
+        },
+    );
+}
+
+sub load_customfield_tags {
+    my $tags = eval {
+        my $pack = MT->component('commercial') or return {};
+        my $fields = $pack->{customfields};
+        if (!$fields || !@$fields) {
+            require CustomFields::Util;
+            CustomFields::Util::load_meta_fields();
+            $fields = $pack->{customfields};
+        }
+        return {} if !$fields || !@$fields;
+
+        my %block_tags = map { _tags_for_field($_) } @$fields;
+        my %tags = ( block => \%block_tags );
+        \%tags;
+    };
+    return $tags if defined $tags;
+    if (my $error = $@) {
+        eval { MT->log($error) };
+    }
+    return {};
 }
 
 1;

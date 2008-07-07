@@ -23,3 +23,4 @@ customfield_types:
         field_html_params: $RightFieldsConvert::RightFieldsConvert::App::field_html_params
         column_def: vchar_idx
         no_default: 1
+tags: $RightFieldsConvert::RightFieldsConvert::App::load_customfield_tags
