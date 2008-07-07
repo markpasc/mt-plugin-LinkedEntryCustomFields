@@ -1,0 +1,67 @@
+name: Convert RightFields to Custom Fields
+id:   rf2cf6a
+key:  rf2cf6a
+
+author_name: Six Apart, Ltd.
+author_link: http://www.sixapart.com/
+
+applications:
+    cms:
+        methods:
+            list_entry_mini: $rf2cf6a::RightFieldsConvert::App::list_entry_mini
+            select_entry:    $rf2cf6a::RightFieldsConvert::App::select_entry
+            convert_rf2cf:   $rf2cf6a::RightFieldsConvert::App::convert_rf2cf
+
+customfield_types:
+    entry:
+        label: Entry
+        order: 800
+        field_html: >>
+            <mt:unless name="asset_chooser_js">
+                <script type="text/javascript">
+                <!--
+                    function insertCustomFieldAsset(html, id) {
+                        getByID(id).value = html;
+
+                        try {
+                            /* remove the form enclosure from the preview */
+                            var enc = document.createElement( "div" );
+                            enc.innerHTML = html;
+                            var form = enc.getElementsByTagName( "form" )[ 0 ];
+                            getByID(id + '_preview').innerHTML = form.innerHTML;
+                        } catch(e) {
+                            log.error(e);
+                        };
+
+                        var remove_button = getByID(id + '_remove_asset');
+                        if (remove_button && html) {
+                            TC.removeClassName(getByID(id + '_remove_asset'), 'hidden');
+                        }
+                        else if (remove_button) {
+                            TC.addClassName(getByID(id + '_remove_asset'), 'hidden');
+                        }
+                    }
+                //-->
+                </script>
+                <mt:setvar name="asset_chooser_js" value="1">
+            </mt:unless>
+            <input name="<mt:var name="field_name">" id="<mt:var name="field_id">" class="hidden" type="hidden" value="<mt:var name="value" escape="html">" />
+            <div id="<mt:var name="field_id">_preview" class="customfield_preview">
+                <mt:var name="value">
+            </div>
+            <div class="actions-bar" style="clear: none">
+                <div class="actions-bar-inner pkg actions">
+                    <button type="submit"
+                        onclick="return openDialog(this.form, 'list_entries', 'blog_id=<mt:var name="blog_id">')"
+                        ><__trans phrase="Choose Entry"></button>
+                    <mt:unless name="required">
+                        <button type="submit"
+                            id="<mt:var name="field_id">_remove_asset"
+                            <mt:unless name="value">class="hidden"</mt:unless>
+                            onclick="insertCustomFieldAsset('', '<mt:var name="field_id" escape="JS">'); return false"
+                            ><__trans phrase="Remove Entry"></button>
+                    </mt:unless>
+                </div>
+            </div>
+        column_def: vchar_idx
+
