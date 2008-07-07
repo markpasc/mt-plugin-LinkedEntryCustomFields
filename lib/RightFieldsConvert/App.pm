@@ -25,8 +25,23 @@ sub inject_addl_field_settings {
         blog_selected => ($_->id == $blog_id ? 1 : 0)
     } } MT->model('blog')->load();
     $param->{blogs} = \@blogs;
-    $param->{field_categories} = $options_categories || q{};
+    $param->{entry_categories} = $options_categories || q{};
 
+    return 1;
+}
+
+sub presave_field {
+    my ($cb, $app, $obj, $original) = @_;
+
+    my $blog_id = $app->param('entry_blog') || '0';
+    my $cats    = $app->param('entry_categories') || '';
+
+    my $options = $cats ? join(q{,}, $blog_id, $cats) : $blog_id;
+
+    for my $field ($obj, $original) {
+        $field->options($options);
+    }
+    
     return 1;
 }
 

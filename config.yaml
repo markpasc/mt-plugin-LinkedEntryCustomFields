@@ -1,9 +1,10 @@
 name: Convert RightFields to Custom Fields
 id:   RightFieldsConvert
 key:  RightFieldsConvert
-
 author_name: Six Apart, Ltd.
 author_link: http://www.sixapart.com/
+version: 1.0
+schema_version: 1
 
 applications:
     cms:
@@ -13,7 +14,7 @@ applications:
             convert_rf2cf:   $RightFieldsConvert::RightFieldsConvert::App::convert_rf2cf
         callbacks:
             template_param.edit_field: $RightFieldsConvert::RightFieldsConvert::App::inject_addl_field_settings
-
+            cms_pre_save.field: $RightFieldsConvert::RightFieldsConvert::App::presave_field
 customfield_types:
     entry:
         label: Entry

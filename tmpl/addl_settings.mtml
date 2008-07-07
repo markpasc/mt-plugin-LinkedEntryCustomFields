@@ -9,25 +9,25 @@ changeType = (function () {
         var type_key = s.<mt:if name="new_object">options[s.selectedIndex].</mt:if>value;
         
         if (type_key == 'entry') {
-            DOM.removeClassName('field_blog-field', 'hidden');
-            DOM.removeClassName('field_categories-field', 'hidden');
+            DOM.removeClassName('entry_blog-field', 'hidden');
+            DOM.removeClassName('entry_categories-field', 'hidden');
         }
         else {
-            DOM.addClassName('field_blog-field', 'hidden');
-            DOM.addClassName('field_categories-field', 'hidden');
+            DOM.addClassName('entry_blog-field', 'hidden');
+            DOM.addClassName('entry_categories-field', 'hidden');
         }
     };
 })();
 </script>
 
-<mtapp:setting id="field_blog" label="Blog"><select id="field_blog">
+<mtapp:setting id="entry_blog" label="Blog"><select id="entry_blog" name="entry_blog">
     <mt:Loop name="blogs">
         <option value="<mt:var name="blog_id">"<mt:if name="blog_selected"> selected="selected"</mt:if>><mt:var name="blog_name" escape="html"></option>
     </mt:Loop>
 </select></mtapp:setting>
-<mtapp:setting id="field_categories"
+<mtapp:setting id="entry_categories"
     label="Category IDs"
     hint="Enter some IDs of categories in the selected blog to limit entries in this field to entries in one of those categories. Separate them with commas."
     show_hint="1">
-    <input id="field_categories" value="<mt:var name="field_categories">">
+    <input id="entry_categories" name="entry_categories" value="<mt:var name="entry_categories">">
 </mtapp:setting>
