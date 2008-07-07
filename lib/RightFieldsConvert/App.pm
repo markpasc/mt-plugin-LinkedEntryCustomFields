@@ -78,7 +78,8 @@ sub list_entry_mini {
         code => sub {
             my ($obj, $row) = @_;
             $row->{'status_' . lc MT::Entry::status_text($obj->status)} = 1;
-            $row->{entry_permalink} = $obj->permalink;
+            $row->{entry_permalink} = $obj->permalink
+                if $obj->status == MT::Entry->RELEASE();
             if (my $ts = $obj->authored_on) {
                 my $date_format = MT::App::CMS->LISTING_DATE_FORMAT();
                 my $datetime_format = MT::App::CMS->LISTING_DATETIME_FORMAT();
