@@ -19,3 +19,4 @@ customfield_types:
         field_html: <mt:Include name="field_html.mtml" component="RightFieldsConvert">
         field_html_params: sub { my $e = MT->model('entry')->load($_[2]->{value}); $_[2]->{preview} = $e->title if $e; }
         column_def: vchar_idx
+        no_default: 1
