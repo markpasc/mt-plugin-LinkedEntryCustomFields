@@ -5,6 +5,7 @@ sub field_html_params {
     my ($field_type, $tmpl_type, $param) = @_;
     my $e = MT->model('entry')->load($param->{value});
     $param->{preview} = $e->title if $e;
+    @{$param}{qw( field_blog_id field_categories )} = split /\s*,\s*/, $param->{options}, 2;
 }
 
 sub inject_addl_field_settings {
@@ -47,12 +48,19 @@ sub presave_field {
 
 sub list_entry_mini {
     my $app = shift;
+    my (%terms, %args);
 
     my $blog_id = $app->param('blog_id')
         or return $app->errtrans('No blog_id');
-    my $entry_iter = MT->model('entry')->load_iter({
-        blog_id => $blog_id,
-    });
+    $terms{blog_id} = $blog_id;
+
+    if (my $cats = $app->param('cat_ids')) {
+        my @cats = split /\s*,\s*/, $cats;
+        $args{join} = MT::Placement->join_on('entry_id', {
+            blog_id     => $blog_id,
+            category_id => \@cats,
+        });
+    }
 
     my $plugin = MT->component('RightFieldsConvert') or die "OMG NO COMPONENT!?!";
     my $tmpl = $plugin->load_tmpl('entry_list.mtml');
@@ -63,10 +71,9 @@ sub list_entry_mini {
             edit_blog_id => $blog_id,
             edit_field   => $app->param('edit_field'),
         },
-        terms => {
-            blog_id => $blog_id,
-        },
-        no_limit => 1,  # TODO: no no no
+        terms => \%terms,
+        args  => \%args,
+        limit => 10,
     });
 }
 

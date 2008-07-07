@@ -27,7 +27,7 @@
 <div class="actions-bar" style="clear: none">
     <div class="actions-bar-inner pkg actions">
         <button type="submit"
-            onclick="return openDialog(this.form, 'list_entry_mini', 'blog_id=<mt:var name="blog_id">&amp;edit_field=<mt:var name="field_id" escape="JS">')"
+            onclick="return openDialog(this.form, 'list_entry_mini', 'blog_id=<mt:var name="field_blog_id">&amp;cat_ids=<mt:var name="field_categories" escape="url">&amp;edit_field=<mt:var name="field_id" escape="JS">')"
             ><__trans phrase="Choose Entry"></button>
         <mt:unless name="required">
             <button type="submit"
