@@ -73,6 +73,11 @@ sub list_entry_mini {
             edit_blog_id => $blog_id,
             edit_field   => $app->param('edit_field'),
         },
+        code => sub {
+            my ($obj, $row) = @_;
+            $row->{'status_' . lc MT::Entry::status_text($obj->status)} = 1;
+            return $row;
+        },
         terms => \%terms,
         args  => \%args,
         limit => 10,

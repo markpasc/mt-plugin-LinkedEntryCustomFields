@@ -89,7 +89,9 @@
                 <thead>
                     <tr>
                         <th class="cb"><img src="<mt:var name="static_uri">images/spacer.gif" width="15" height="1"></th>
-                        <th id="as-file-status"><img src="<mt:var name="static_uri">images/status_icons/invert-flag.gif" alt="<__trans phrase="Status">" title="<__trans phrase="Status">" width="9" height="9" /></th>
+                        <th class="status">
+                            <img src="<mt:var name="static_uri">images/status_icons/invert-flag.gif" alt="<__trans phrase="Status">" title="<__trans phrase="Status">" width="9" height="9" />
+                        </th>
                         <th class="panel-label"><__trans phrase="Title"></th>
         <mt:unless name="edit_blog_id">
                         <th id="as-weblog"><__trans phrase="Blog"></th>
@@ -107,7 +109,7 @@
     <mt:loop name="object_loop">
                             <tr id="entry-<mt:var name="id">" class="<mt:if name="__odd__">odd<mt:else>even</mt:if>">
                                 <td class="cb"><input type="hidden" id="entry-<mt:var name="id">-json" value="<mt:var name="metadata_json" escape="html">" /><input type="radio" name="id" value="<mt:var name="id">" class="select" id="entry-radio-<mt:var name="id">" /></td>
-                                <td class="status-<mt:if name="file_is_missing">missing<mt:else>publish</mt:if>"><img src="<mt:var name="static_uri">images/spacer.gif" <mt:if name="file_is_missing">alt="<__trans phrase="Pending">"<mt:else>alt="<__trans phrase="Published">"</mt:if> width="9" height="9" /></td>
+                                <td class="status-<mt:if name="status_draft">draft<mt:elseif name="status_publish">publish<mt:elseif name="status_review">review<mt:elseif name="status_future">future</mt:if>"><img src="<mt:var name="static_uri">images/spacer.gif" alt="<mt:if name="status_draft"><__trans phrase="Unpublished (Draft)"><mt:elseif name="status_publish"><__trans phrase="Published"><mt:elseif name="status_review"><__trans phrase="Unpublished (Review)"><mt:elseif name="status_future"><__trans phrase="Scheduled"></mt:if>" width="9" height="9" /></td>
                                 <td class="panel-label">
                                     <$mt:var name="title" escape="html"$>
                                 </td>
