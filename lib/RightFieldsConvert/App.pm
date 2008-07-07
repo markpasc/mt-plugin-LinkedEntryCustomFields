@@ -3,8 +3,10 @@ package RightFieldsConvert::App;
 
 sub field_html_params {
     my ($field_type, $tmpl_type, $param) = @_;
-    my $e = MT->model('entry')->load($param->{value});
-    $param->{preview} = $e->title if $e;
+    if ($param->{value}) {
+        my $e = MT->model('entry')->load($param->{value});
+        $param->{field_preview} = $e->title if $e;
+    }
     @{$param}{qw( field_blog_id field_categories )} = split /\s*,\s*/, $param->{options}, 2;
 }
 
