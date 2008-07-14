@@ -184,19 +184,22 @@ sub convert_rf2cf {
             # TODO: vary data based on field type.
             DATUM: for my $datum (qw( label weblog category_ids tag )) {
                 my $first_value = $first_field->{$datum};
+                $first_value = lc $first_value if $datum eq 'label';
                 for my $next_field (@fields) {
                     my $next_value = $next_field->{$datum};
-                    $are_identical &&=  defined $first_value && !defined $next_value        ? 0
-                                     : !defined $first_value &&  defined $next_value        ? 0
-                                     :  defined $first_value && $first_value ne $next_value ? 0
-                                     :                                                        1
-                                     ;
-                    last DATUM if !$are_identical;
+                    $next_value = lc $next_value if $datum eq 'label';
+                    $make_global &&=  defined $first_value && !defined $next_value        ? 0
+                                   : !defined $first_value &&  defined $next_value        ? 0
+                                   :  defined $first_value && $first_value ne $next_value ? 0
+                                   :                                                        1
+                                   ;
+                    last DATUM if !$make_global;
                 }
             }
         }
-                
+
         if ($make_global) {
+            my ($first_field) = values %$fields;
             _make_custom_field(
                 blog_id  => 0,
                 field_id => $field_id,
@@ -205,11 +208,11 @@ sub convert_rf2cf {
             next FIELD_BY_ID;
         }
 
-        while (my ($blog_id, $field_data) = keys %$fields) {
+        while (my ($blog_id, $field_data) = each %$fields) {
             _make_custom_field(
                 blog_id    => $blog_id,
                 field_id   => $field_id,
-                field_data => $field_data,
+                data       => $field_data,
             );
         }
     }
