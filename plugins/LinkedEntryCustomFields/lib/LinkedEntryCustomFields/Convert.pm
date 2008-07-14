@@ -3,14 +3,32 @@ package LinkedEntryCustomFields::Convert;
 use strict;
 use warnings;
 
+use constant DEBUG => 1;
+
 my %custom_type_for_right_type = (
     entry => 'entry',
     file  => 'asset',
 );
 
+my %meta_field_for_right_type = (
+    entry => 'vchar_idx',
+);
+
+my %field_data_for_right_type = (
+    entry => [ qw( weblog category_ids ) ],
+    file  => [ qw( filenames overwrite upload_path url_path ) ],
+);
+
 sub _make_custom_field {
     my %param = @_;
-    my ($blog_id, $field_id, $field_type, $field_data) = @param{qw( blog_id field_id field_type data )};
+    my ($blog_id, $field_id, $field_data) = @param{qw( blog_id field_id data )};
+    MT->log("Would make custom field for field $field_id but it doesn't have a type?")
+        if DEBUG() && !$field_data->{type};
+    my $field_type = $field_data->{type}
+        or return;
+    MT->log("Making custom field for field $field_id of type $field_type") if DEBUG();
+    MT->log("Field $field_id type $field_type is not a supported type for conversion")
+        if DEBUG() && !$custom_type_for_right_type{$field_type};
     my $cf_type = $custom_type_for_right_type{$field_type}
         or return;
     
@@ -20,9 +38,10 @@ sub _make_custom_field {
         basename => $field_id,
     });
     $cf ||= MT->model('field')->new;
-    
+
+    my $options;
     if ($field_type eq 'entry') {
-        my $options = $field_data->{weblog};
+        $options = $field_data->{weblog};
         $options = join q{,}, $field_data->{category_ids}
             if $field_data->{category_ids};
     }
@@ -31,9 +50,9 @@ sub _make_custom_field {
         name     => $field_data->{label},
         obj_type => 'entry',  # rightfields only exist for entries
         type     => $cf_type,
-        options  => $options,
         basename => $field_id,
     });
+    $cf->options($options) if defined $options;
     $cf->blog_id($blog_id) if $blog_id;
 
     my $tag = $field_data->{tag};
@@ -43,10 +62,6 @@ sub _make_custom_field {
 
     $cf->save or die $cf->errstr;
 }
-
-my %meta_field_for_field_type = (
-    entry => 'vchar_idx',
-);
 
 sub _copy_asset_custom_fields_from_file {
     my %param = @_;
@@ -64,7 +79,8 @@ sub _copy_custom_field_data_from_pseudofields {
     my $meta_pkg = MT->model('entry')->meta_pkg;
     # TODO: really we should convert pseudofields en masse, i guess, to keep
     # from having to reiterate plugindata for every field for every blog.
-    my $meta_field = $meta_field_for_field_type{$field_type};
+    my $meta_field = $meta_field_for_right_type{$field_type}
+        or die "Can't convert custom field data from unknown type $field_type\n";
     DATA: while (my $data_obj = $data_iter->()) {
         my $data = $data_obj->data;
         next DATA if !$data->{$field_id};
@@ -86,10 +102,10 @@ sub _copy_custom_field_data {
     my %param = @_;
     my ($blog_id, $field_id, $field_type, $datasource) = @param{qw( blog_id field_id field_type datasource )};
     
-    return _copy_custom_field_data_from_pseudofields(@_)
-        if $datasource eq '_pseudo';
     return _copy_asset_custom_fields_from_file(@_)
         if $field_type eq 'file';
+    return _copy_custom_field_data_from_pseudofields(@_)
+        if $datasource eq '_pseudo';
 
     # Find the class that represents that RF table.
     my $rf_pkg = join q{::}, 'RightFieldsTable', $field_id, "Blog$blog_id";
@@ -118,7 +134,7 @@ sub _copy_custom_field_data {
     my $dbh = $driver->rw_handle;
 
     my $meta_table = $driver->table_for($meta_pkg);
-    my @meta_fields = (qw( entry_id type ), $meta_field_for_field_type{$field_type};
+    my @meta_fields = (qw( entry_id type ), $meta_field_for_right_type{$field_type});
     @meta_fields = map { $dbd->db_column_name($meta_table, $_) } @meta_fields;
 
     my $rf_table = $driver->table_for($rf_pkg);
@@ -154,7 +170,8 @@ sub convert_rf2cf {
 
     my %tags_for_fields;
     TAG: for my $tag_def (@tags) {
-        $tag_def->key =~ m{ \A blog_(\d+) }xms or next TAG;
+        $tag_def->key =~ m{ \A blog_(\d+) }xms
+            or next TAG;
         my $blog_id = $1;
 
         # We don't know from the tag data what fields are entries, so record all of them.
@@ -177,11 +194,14 @@ sub convert_rf2cf {
         my $fields = $fields_data->{cols};
         FIELD: while (my ($field_id, $field_data) = each %$fields) {
             # TODO: less so for other field types.
-            next FIELD if !$field_data->{type}
-                || !$custom_type_for_right_type{type};
+            my $field_type = $field_data->{type} or next FIELD;
+            next FIELD if !$custom_type_for_right_type{$field_type};
 
             my %field;
-            $field{$_} = $field_data->{$_} for qw( label weblog category_ids );
+            # TODO: hmm
+            my $field_keys = $field_data_for_right_type{$field_type}
+                or next FIELD;
+            $field{$_} = $field_data->{$_} for qw( label type ), @$field_keys;
             $field{blog_id} = $blog_id;
             $field{tag} = $tags_for_fields{$blog_id}->{$field_id};
             
@@ -243,6 +263,7 @@ sub convert_rf2cf {
             _copy_custom_field_data(
                 blog_id    => $blog_id,
                 field_id   => $field_id,
+                field_type => $field_data->{type},
                 datasource => $datasource,
             );
         }
