@@ -65,14 +65,83 @@ sub _make_custom_field {
 
 sub _copy_asset_custom_fields_from_file {
     my %param = @_;
-    my ($blog_id, $field_id, $datasource) = @param{qw( blog_id field_id datasource )};
-    
-    die "File conversion not yet implemented\n";
+    my ($blog_id, $field_id, $field_data, $datasource) = @param{qw( blog_id field_id data datasource )};
+
+    my $iter;
+    if ($datasource eq '_pseudo') {
+        my $pdata_iter = MT->model('plugindata')->load_iter({
+            plugin => 'RightFieldsPseudo',
+        }, {
+            join => MT->model('entry')->join_on('key', { blog_id => $blog_id }),
+        });
+        
+        $iter = sub {
+            PDATA: while (my $pdata = $pdata_iter->()) {
+                my $field_value = $pdata->{$field_id};
+                next PDATA if !defined $field_value;
+                return {
+                    id        => $pdata->key,
+                    $field_id => $field_value,
+                };
+            }
+        };
+    }
+    else {
+        my $rf_pkg = _make_rightfields_table_pkg(%param);
+        my $rf_iter = $rf_pkg->load_iter({}, {
+            join     => MT->model('entry')->join_on('key', { blog_id => $blog_id }),
+            not_null => { $field_id => 1 },
+        });
+
+        $iter = sub {
+            my $rf_obj = $rf_iter->()
+                or return;
+            return {
+                id        => $rf_obj->id,
+                $field_id => $rf_obj->$field_id(),
+            };
+        };
+    }
+
+    my $meta_pkg = MT->model('entry')->meta_pkg;
+    while (my $file_data = $iter->()) {
+        my $filepath = $file_data->{$field_id};
+        require File::Basename;
+        my (undef, $basename, $ext) = File::Basename::fileparse($filepath, qr/[A-Za-z0-9]+$/);
+
+        my $asset_class = MT->model('asset')->handler_for_file($filepath);
+        my $asset = $asset_class->load({
+            file_path => $filepath,
+            blog_id   => $blog_id,
+        });
+        $asset ||= $asset_class->new;
+
+        $asset->set_values({
+            blog_id   => $blog_id,
+            file_path => $filepath,
+            file_name => $basename,
+            file_ext  => $ext,
+        });
+        $asset->save or die $asset->errstr;
+
+        my $meta_obj = $meta_pkg->new;
+        $meta_obj->set_values({
+            entry_id  => $file_data->{id},
+            type      => "field.$field_id",
+            vclob     => $asset->as_html(),
+        });
+        $meta_obj->save
+            or die "Could not save custom field version of field $field_id for entry #"
+                . $file_data->{id} . ": " . $meta_obj->errstr;
+    }
+
+    return 1;
 }
 
 sub _copy_custom_field_data_from_pseudofields {
     my %param = @_;
-    my ($blog_id, $field_id, $field_type, $datasource) = @param{qw( blog_id field_id field_type datasource )};
+    my ($blog_id, $field_id, $field_data, $datasource) = @param{qw( blog_id field_id data datasource )};
+    my $field_type = $field_data->{type};
     
     my $data_iter = MT->model('plugindata')->load_iter({ plugin => 'RightFieldsPseudo' });
     
@@ -98,14 +167,9 @@ sub _copy_custom_field_data_from_pseudofields {
     return 1;    
 }
 
-sub _copy_custom_field_data {
+sub _make_rightfields_table_pkg {
     my %param = @_;
-    my ($blog_id, $field_id, $field_type, $datasource) = @param{qw( blog_id field_id field_type datasource )};
-    
-    return _copy_asset_custom_fields_from_file(@_)
-        if $field_type eq 'file';
-    return _copy_custom_field_data_from_pseudofields(@_)
-        if $datasource eq '_pseudo';
+    my ($blog_id, $field_id, $datasource) = @param{qw( blog_id field_id datasource )};
 
     # Find the class that represents that RF table.
     my $rf_pkg = join q{::}, 'RightFieldsTable', $field_id, "Blog$blog_id";
@@ -126,6 +190,21 @@ sub _copy_custom_field_data {
         }) or die "Could not install properties for RightFields table class for blog #$blog_id's $field_id field: "
             . $rf_pkg->errstr;
     }
+
+    return $rf_pkg;
+}
+
+sub _copy_custom_field_data {
+    my %param = @_;
+    my ($blog_id, $field_id, $field_data, $datasource) = @param{qw( blog_id field_id data datasource )};
+    my $field_type = $field_data->{type};
+    
+    return _copy_asset_custom_fields_from_file(%param)
+        if $field_type eq 'file';
+    return _copy_custom_field_data_from_pseudofields(%param)
+        if $datasource eq '_pseudo';
+
+    my $rf_pkg = _make_rightfields_table_pkg(%param);
 
     # Copy the data for that field.
     my $meta_pkg = MT->model('entry')->meta_pkg;
@@ -198,7 +277,6 @@ sub convert_rf2cf {
             next FIELD if !$custom_type_for_right_type{$field_type};
 
             my %field;
-            # TODO: hmm
             my $field_keys = $field_data_for_right_type{$field_type}
                 or next FIELD;
             $field{$_} = $field_data->{$_} for qw( label type ), @$field_keys;
@@ -263,7 +341,7 @@ sub convert_rf2cf {
             _copy_custom_field_data(
                 blog_id    => $blog_id,
                 field_id   => $field_id,
-                field_type => $field_data->{type},
+                data       => $field_data,
                 datasource => $datasource,
             );
         }
