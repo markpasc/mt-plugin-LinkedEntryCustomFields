@@ -281,7 +281,9 @@ sub _copy_custom_field_data {
     my $dbh = $driver->rw_handle;
 
     my $meta_table = $driver->table_for($meta_pkg);
-    my @meta_fields = map { $dbd->db_column_name($meta_table, $_) } qw( entry_id type vchar_idx );
+    # TODO: vary the meta field based on the field we're converting
+    my @meta_fields = (qw( entry_id type ), 'vchar_idx');
+    @meta_fields = map { $dbd->db_column_name($meta_table, $_) } @meta_fields;
 
     my $rf_table = $driver->table_for($rf_pkg);
     my $id_col   = $dbd->db_column_name($rf_table, 'id');
