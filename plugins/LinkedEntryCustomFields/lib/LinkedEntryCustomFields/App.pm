@@ -223,8 +223,28 @@ sub _copy_custom_field_data_from_pseudofields {
     my %param = @_;
     my ($blog_id, $field_id, $datasource) = @param{qw( blog_id field_id datasource )};
     
-    # TODO: implement?
-    die "Conversion from pseudo fields not yet implemented\n";
+    my $data_iter = MT->model('plugindata')->load_iter({ plugin => 'RightFieldsPseudo' });
+    
+    my $meta_pkg = MT->model('entry')->meta_pkg;
+    # TODO: vary this based on field we're converting... really we should
+    # convert pseudofields en masse, i guess, to keep from having to re-
+    # iterate plugindata for every field for every blog with pseudofields.
+    my $meta_field = 'vchar_idx';
+    DATA: while (my $data_obj = $data_iter->()) {
+        my $data = $data_obj->data;
+        next DATA if !$data->{$field_id}
+        my $meta_obj = $meta_pkg->new;
+        $meta_obj->set_values({
+            entry_id    => $data_obj->key,
+            type        => "field.$field_id",
+            $meta_field => $data->{$field_id},
+        });
+        $meta_obj->save
+            or die "Could not save custom field version of field $field_id for entry #"
+                . $data_obj->key . ": " . $meta_obj->errstr;
+    }
+    
+    return 1;    
 }
 
 sub _copy_custom_field_data {
