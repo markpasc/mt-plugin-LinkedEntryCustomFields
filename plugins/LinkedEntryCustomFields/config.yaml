@@ -11,7 +11,7 @@ applications:
         methods:
             list_entry_mini: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::list_entry_mini
             select_entry:    $LinkedEntryCustomFields::LinkedEntryCustomFields::App::select_entry
-            convert_rf2cf:   $LinkedEntryCustomFields::LinkedEntryCustomFields::App::convert_rf2cf
+            convert_rf2cf:   $LinkedEntryCustomFields::LinkedEntryCustomFields::Convert::convert_rf2cf
         callbacks:
             template_param.edit_field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::inject_addl_field_settings
             cms_pre_save.field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::presave_field
