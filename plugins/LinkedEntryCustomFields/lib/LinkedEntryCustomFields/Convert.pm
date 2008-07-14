@@ -66,6 +66,7 @@ sub _make_custom_field {
 sub _copy_asset_custom_fields_from_file {
     my %param = @_;
     my ($blog_id, $field_id, $field_data, $datasource) = @param{qw( blog_id field_id data datasource )};
+    MT->log("Copying values of file RF $field_id to an asset CF") if DEBUG();
 
     my $iter;
     if ($datasource eq '_pseudo') {
@@ -104,10 +105,13 @@ sub _copy_asset_custom_fields_from_file {
     }
 
     my $meta_pkg = MT->model('entry')->meta_pkg;
+    require File::Spec;
+    require File::Basename;
     while (my $file_data = $iter->()) {
-        my $filepath = $file_data->{$field_id};
-        require File::Basename;
-        my (undef, $basename, $ext) = File::Basename::fileparse($filepath, qr/[A-Za-z0-9]+$/);
+        my $filepath = File::Spec->catfile($field_data->{upload_path}, $file_data->{$field_id});
+        MT->log("Upload path " . $field_data->{upload_path} . " + file path data " . $file_data->{$field_id} . " = $filepath") if DEBUG();
+        my ($basename, undef, $ext) = File::Basename::fileparse($filepath, qr/[A-Za-z0-9]+$/);
+        MT->log("Filepath $filepath splits into $basename and $ext parts") if DEBUG();
 
         my $asset_class = MT->model('asset')->handler_for_file($filepath);
         my $asset = $asset_class->load({
