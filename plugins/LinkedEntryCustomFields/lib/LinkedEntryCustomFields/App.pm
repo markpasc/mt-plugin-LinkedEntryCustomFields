@@ -187,6 +187,93 @@ sub load_customfield_tags {
     return {};
 }
 
+sub _make_custom_field {
+    my %param = @_;
+    my ($blog_id, $field_id, $field_data) = @param{qw( blog_id field_id data )};
+    
+    # Make or update the corresponding custom field.
+    my $cf = MT->model('field')->load({
+        blog_id  => $blog_id,
+        basename => $field_id,
+    });
+    $cf ||= MT->model('field')->new;
+    
+    my $options = $field_data->{weblog};
+    $options = join q{,}, $field_data->{category_ids}
+        if $field_data->{category_ids};
+
+    $cf->set_values({
+        name     => $field_data->{label},
+        obj_type => 'entry',
+        type     => 'entry',
+        options  => $options,
+        basename => $field_id,
+    });
+    $cf->blog_id($blog_id) if $blog_id;  # TODO: 0 = global?
+
+    my $tag = $field_data->{tag};
+    $tag ||= lc join q{}, $cf->obj_type, 'data', $cf->name;
+    # TODO: ensure the tag is unique, since CF makes us.
+    $cf->tag($tag);
+
+    $cf->save or die $cf->errstr;
+}
+
+sub _copy_custom_field_data_from_pseudofields {
+    my %param = @_;
+    my ($blog_id, $field_id, $datasource) = @param{qw( blog_id field_id datasource )};
+    
+    # TODO: implement?
+    die "Conversion from pseudo fields not yet implemented\n";
+}
+
+sub _copy_custom_field_data {
+    my %param = @_;
+    my ($blog_id, $field_id, $datasource) = @param{qw( blog_id field_id datasource )};
+    
+    return _copy_custom_field_data_from_pseudofields(@_)
+        if $datasource eq '_pseudo';
+
+    # Make a class that represents that RF table.
+    my $rf_pkg = join q{::}, 'RightFieldsTable', $field_id, "Blog$blog_id";
+    eval "package $rf_pkg; use base qw( MT::Object ); 1"
+        or die "Could not create RightFields table class for blog #$blog_id's $field_id field: $@";
+    
+    $rf_pkg->install_properties({
+        datasource => $datasource,
+        column_defs => {
+            id        => 'integer not null',
+            $field_id => 'integer',  # for linked entries
+        },
+        indexes => {
+            id => 1,
+        },
+    }) or die "Could not install properties for RightFields table class for blog #$blog_id's $field_id field: "
+        . $rf_pkg->errstr;
+
+    # Copy the data for that field.
+    my $meta_pkg = MT->model('entry')->meta_pkg;
+    my $driver = $meta_pkg->dbi_driver;
+    my $dbd = $driver->dbd;
+    my $dbh = $driver->rw_handle;
+
+    my $meta_table = $driver->table_for($meta_pkg);
+    my @meta_fields = map { $dbd->column_name($meta_table, $_) } qw( entry_id type vchar_idx );
+
+    my $rf_table = $driver->table_for($rf_pkg);
+    my $id_col   = $dbd->column_name($rf_table, 'id');
+    my $data_col = $dbd->column_name($rf_table, $field_id);
+    
+    # TODO: generic multidatabase support?
+    my $insert_sql = join q{ }, 'INSERT IGNORE INTO', $meta_table,
+        '(', join(q{, }, @meta_fields), ')',
+        'SELECT', $id_col, q{,}, q{?}, q{,}, $data_col, 'FROM',
+        $rf_table;
+    MT->log('INSERTZ: ' . $insert_sql);
+    $dbh->execute($insert_sql, {}, "field.$field_id")
+        or die $dbh->errstr || $DBI::errstr;
+}
+
 sub convert_rf2cf {
     my $app = shift;
 
@@ -266,47 +353,20 @@ sub convert_rf2cf {
     # Make corresponding custom fields.
     while (my ($blog_id, $fields) = each %fields_for_blog) {
         while (my ($field_id, $field_data) = each %$fields) {
-            # Make or update the corresponding custom field.
-            my $cf = MT->model('field')->load({
+            _make_custom_field(
                 blog_id  => $blog_id,
-                basename => $field_id,
-            });
-            $cf ||= MT->model('field')->new;
+                field_id => $field_id,
+                data     => $field_data,
+            );
             
-            my $options = $field_data->{weblog};
-            $options = join q{,}, $field_data->{category_ids}
-                if $field_data->{category_ids};
-
-            $cf->set_values({
-                name     => $field_data->{label},
-                obj_type => 'entry',
-                type     => 'entry',
-                options  => $options,
-                basename => $field_id,
-            });
-            $cf->blog_id($blog_id) if $blog_id;  # TODO: 0 = global?
-
-            my $tag = $field_data->{tag};
-            $tag ||= lc join q{}, $cf->obj_type, 'data', $cf->name;
-            # TODO: ensure the tag is unique, since CF makes us.
-            $cf->tag($tag);
-
-            $cf->save or die $cf->errstr;
-            
-            # Copy the data for that field.
             my $datasource = $datasource_for_blog{$blog_id};
-            if ($datasource eq '_pseudo') {
-                # omg pseudo objects aiee
-            }
-            else {
-                my $sql = MT::ObjectDriver::SQL->new;
-                $sql->
-            }
+            _copy_custom_field_data(
+                blog_id    => $blog_id,
+                field_id   => $field_id,
+                datasource => $datasource,
+            );
         }
     }
-    
-    # Start copying data.
-    
     
     return $app->return_to_dashboard( redirect => 1 );
 }
