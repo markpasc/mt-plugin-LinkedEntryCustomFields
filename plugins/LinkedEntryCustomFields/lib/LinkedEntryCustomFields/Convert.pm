@@ -25,7 +25,7 @@ sub _make_custom_field {
         options  => $options,
         basename => $field_id,
     });
-    $cf->blog_id($blog_id) if $blog_id;  # TODO: 0 = global?
+    $cf->blog_id($blog_id) if $blog_id;
 
     my $tag = $field_data->{tag};
     $tag ||= lc join q{}, $cf->obj_type, 'data', $cf->name;
