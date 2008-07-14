@@ -254,22 +254,25 @@ sub _copy_custom_field_data {
     return _copy_custom_field_data_from_pseudofields(@_)
         if $datasource eq '_pseudo';
 
-    # Make a class that represents that RF table.
+    # Find the class that represents that RF table.
     my $rf_pkg = join q{::}, 'RightFieldsTable', $field_id, "Blog$blog_id";
-    eval "package $rf_pkg; use base qw( MT::Object ); 1"
-        or die "Could not create RightFields table class for blog #$blog_id's $field_id field: $@";
-    
-    $rf_pkg->install_properties({
-        datasource => $datasource,
-        column_defs => {
-            id        => 'integer not null',
-            $field_id => 'integer',  # for linked entries
-        },
-        indexes => {
-            id => 1,
-        },
-    }) or die "Could not install properties for RightFields table class for blog #$blog_id's $field_id field: "
-        . $rf_pkg->errstr;
+    if (!eval { $rf_pkg->properties }) {
+        # Guess we have to make it.
+        eval "package $rf_pkg; use base qw( MT::Object ); 1"
+            or die "Could not create RightFields table class for blog #$blog_id's $field_id field: $@";
+
+        $rf_pkg->install_properties({
+            datasource => $datasource,
+            column_defs => {
+                id        => 'integer not null',
+                $field_id => 'integer',  # for linked entries
+            },
+            indexes => {
+                id => 1,
+            },
+        }) or die "Could not install properties for RightFields table class for blog #$blog_id's $field_id field: "
+            . $rf_pkg->errstr;
+    }
 
     # Copy the data for that field.
     my $meta_pkg = MT->model('entry')->meta_pkg;
