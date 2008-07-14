@@ -289,13 +289,15 @@ sub _copy_custom_field_data {
     my $id_col   = $dbd->db_column_name($rf_table, 'id');
     my $data_col = $dbd->db_column_name($rf_table, $field_id);
     
-    # TODO: we should ignore fields that are already set, using INSERT IGNORE on mysql or INSERT OR IGNORE on sqlite. but if we can't support it on the other drivers, should we bother? should we delete conflicting data first from mt_entry_meta so the insert should succeed?
+    # TODO: we should ignore fields that are already set, using INSERT IGNORE
+    # on mysql or INSERT OR IGNORE on sqlite. but if we can't support it on
+    # the other drivers, should we bother? should we delete conflicting data
+    # first from mt_entry_meta so the insert should succeed?
     # TODO: generic multidatabase support with ORM loop?
     my $insert_sql = join q{ }, 'INSERT INTO', $meta_table,
         '(', join(q{, }, @meta_fields), ')',
         'SELECT', $id_col, q{,}, q{?}, q{,}, $data_col, 'FROM',
         $rf_table;
-    MT->log('INSERTZ: ' . $insert_sql);
     $dbh->do($insert_sql, {}, "field.$field_id")
         or die $dbh->errstr || $DBI::errstr;
 }
@@ -316,7 +318,6 @@ sub convert_rf2cf {
 
     my %tags_for_fields;
     TAG: for my $tag_def (@tags) {
-        MT->log('OH HAI from tag ' . $tag_def->key);
         $tag_def->key =~ m{ \A blog_(\d+) }xms or next TAG;
         my $blog_id = $1;
 
@@ -332,7 +333,6 @@ sub convert_rf2cf {
     
     my (%fields_for_blog, %fields_by_id, %datasource_for_blog);
     FIELDS: for my $fields_def (@fields) {
-        MT->log('OH HAI from fieldset ' . $fields_def->key);
         $fields_def->key =~ m{ \A blog_(\d+) }xms or next FIELDS;
         my $blog_id = $1;
         
@@ -341,6 +341,7 @@ sub convert_rf2cf {
         my $fields = $fields_data->{cols};
         FIELD: while (my ($field_id, $field_data) = each %$fields) {
             # Entry fields only.
+            # TODO: less so for other field types.
             next FIELD if !$field_data->{type}
                 || $field_data->{type} ne 'entry';
 
@@ -360,6 +361,7 @@ sub convert_rf2cf {
         next FIELD_BY_ID if 1 == scalar keys %$fields;
         
         my ($first_field, @fields) = values %$fields;
+        # TODO: vary data based on field type.
         for my $datum (qw( label weblog category_ids tag )) {
             my $first_value = $first_field->{$datum};
             for my $next_field (@fields) {
