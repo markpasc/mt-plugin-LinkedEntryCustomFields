@@ -253,16 +253,16 @@ sub _copy_custom_field_data {
 
     # Copy the data for that field.
     my $meta_pkg = MT->model('entry')->meta_pkg;
-    my $driver = $meta_pkg->dbi_driver;
+    my $driver = $meta_pkg->driver;
     my $dbd = $driver->dbd;
     my $dbh = $driver->rw_handle;
 
     my $meta_table = $driver->table_for($meta_pkg);
-    my @meta_fields = map { $dbd->column_name($meta_table, $_) } qw( entry_id type vchar_idx );
+    my @meta_fields = map { $dbd->db_column_name($meta_table, $_) } qw( entry_id type vchar_idx );
 
     my $rf_table = $driver->table_for($rf_pkg);
-    my $id_col   = $dbd->column_name($rf_table, 'id');
-    my $data_col = $dbd->column_name($rf_table, $field_id);
+    my $id_col   = $dbd->db_column_name($rf_table, 'id');
+    my $data_col = $dbd->db_column_name($rf_table, $field_id);
     
     # TODO: generic multidatabase support?
     my $insert_sql = join q{ }, 'INSERT IGNORE INTO', $meta_table,
@@ -270,7 +270,7 @@ sub _copy_custom_field_data {
         'SELECT', $id_col, q{,}, q{?}, q{,}, $data_col, 'FROM',
         $rf_table;
     MT->log('INSERTZ: ' . $insert_sql);
-    $dbh->execute($insert_sql, {}, "field.$field_id")
+    $dbh->do($insert_sql, {}, "field.$field_id")
         or die $dbh->errstr || $DBI::errstr;
 }
 
