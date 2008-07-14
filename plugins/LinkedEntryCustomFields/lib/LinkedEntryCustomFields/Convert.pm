@@ -70,15 +70,21 @@ sub _copy_asset_custom_fields_from_file {
 
     my $iter;
     if ($datasource eq '_pseudo') {
-        my $pdata_iter = MT->model('plugindata')->load_iter({
+        my $pdata_pkg = MT->model('plugindata');
+        my $pdata_key_col = $pdata_pkg->driver->dbd->db_column_name($pdata_pkg->datasource, 'key');
+        my $pdata_iter = $pdata_pkg->load_iter({
             plugin => 'RightFieldsPseudo',
         }, {
-            join => MT->model('entry')->join_on('key', { blog_id => $blog_id }),
+            join => MT->model('entry')->join_on(undef, {
+                id      => \"= $pdata_key_col",
+                blog_id => $blog_id,
+            }),
         });
         
         $iter = sub {
             PDATA: while (my $pdata = $pdata_iter->()) {
-                my $field_value = $pdata->{$field_id};
+                my $field_value = $pdata->data->{$field_id};
+                MT->log('Skipping pdata #' . $pdata->id . " for field $field_id due to undefined value") if DEBUG() && !defined $field_value;
                 next PDATA if !defined $field_value;
                 return {
                     id        => $pdata->key,
