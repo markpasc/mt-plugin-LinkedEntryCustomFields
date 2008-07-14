@@ -187,6 +187,7 @@ sub _make_rightfields_table_pkg {
             indexes => {
                 id => 1,
             },
+            primary_key => 'id',
         }) or die "Could not install properties for RightFields table class for blog #$blog_id's $field_id field: "
             . $rf_pkg->errstr;
     }
