@@ -264,8 +264,9 @@ sub _copy_custom_field_data {
     my $id_col   = $dbd->db_column_name($rf_table, 'id');
     my $data_col = $dbd->db_column_name($rf_table, $field_id);
     
-    # TODO: generic multidatabase support?
-    my $insert_sql = join q{ }, 'INSERT IGNORE INTO', $meta_table,
+    # TODO: we should ignore fields that are already set, using INSERT IGNORE on mysql or INSERT OR IGNORE on sqlite. but if we can't support it on the other drivers, should we bother? should we delete conflicting data first from mt_entry_meta so the insert should succeed?
+    # TODO: generic multidatabase support with ORM loop?
+    my $insert_sql = join q{ }, 'INSERT INTO', $meta_table,
         '(', join(q{, }, @meta_fields), ')',
         'SELECT', $id_col, q{,}, q{?}, q{,}, $data_col, 'FROM',
         $rf_table;
