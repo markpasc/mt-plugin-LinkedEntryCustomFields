@@ -89,7 +89,7 @@ sub _copy_asset_custom_fields_from_file {
     else {
         my $rf_pkg = _make_rightfields_table_pkg(%param);
         my $rf_iter = $rf_pkg->load_iter({}, {
-            join     => MT->model('entry')->join_on('key', { blog_id => $blog_id }),
+            join     => MT->model('entry')->join_on('id', { blog_id => $blog_id }),
             not_null => { $field_id => 1 },
         });
 
