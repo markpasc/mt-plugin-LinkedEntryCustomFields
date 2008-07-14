@@ -3,9 +3,16 @@ package LinkedEntryCustomFields::Convert;
 use strict;
 use warnings;
 
+my %custom_type_for_right_type = (
+    entry => 'entry',
+    file  => 'asset',
+);
+
 sub _make_custom_field {
     my %param = @_;
-    my ($blog_id, $field_id, $field_data) = @param{qw( blog_id field_id data )};
+    my ($blog_id, $field_id, $field_type, $field_data) = @param{qw( blog_id field_id field_type data )};
+    my $cf_type = $custom_type_for_right_type{$field_type}
+        or return;
     
     # Make or update the corresponding custom field.
     my $cf = MT->model('field')->load({
@@ -14,14 +21,16 @@ sub _make_custom_field {
     });
     $cf ||= MT->model('field')->new;
     
-    my $options = $field_data->{weblog};
-    $options = join q{,}, $field_data->{category_ids}
-        if $field_data->{category_ids};
+    if ($field_type eq 'entry') {
+        my $options = $field_data->{weblog};
+        $options = join q{,}, $field_data->{category_ids}
+            if $field_data->{category_ids};
+    }
 
     $cf->set_values({
         name     => $field_data->{label},
-        obj_type => 'entry',
-        type     => 'entry',
+        obj_type => 'entry',  # rightfields only exist for entries
+        type     => $cf_type,
         options  => $options,
         basename => $field_id,
     });
@@ -35,17 +44,27 @@ sub _make_custom_field {
     $cf->save or die $cf->errstr;
 }
 
-sub _copy_custom_field_data_from_pseudofields {
+my %meta_field_for_field_type = (
+    entry => 'vchar_idx',
+);
+
+sub _copy_asset_custom_fields_from_file {
     my %param = @_;
     my ($blog_id, $field_id, $datasource) = @param{qw( blog_id field_id datasource )};
+    
+    die "File conversion not yet implemented\n";
+}
+
+sub _copy_custom_field_data_from_pseudofields {
+    my %param = @_;
+    my ($blog_id, $field_id, $field_type, $datasource) = @param{qw( blog_id field_id field_type datasource )};
     
     my $data_iter = MT->model('plugindata')->load_iter({ plugin => 'RightFieldsPseudo' });
     
     my $meta_pkg = MT->model('entry')->meta_pkg;
-    # TODO: vary this based on field we're converting... really we should
-    # convert pseudofields en masse, i guess, to keep from having to re-
-    # iterate plugindata for every field for every blog with pseudofields.
-    my $meta_field = 'vchar_idx';
+    # TODO: really we should convert pseudofields en masse, i guess, to keep
+    # from having to reiterate plugindata for every field for every blog.
+    my $meta_field = $meta_field_for_field_type{$field_type};
     DATA: while (my $data_obj = $data_iter->()) {
         my $data = $data_obj->data;
         next DATA if !$data->{$field_id};
@@ -65,10 +84,12 @@ sub _copy_custom_field_data_from_pseudofields {
 
 sub _copy_custom_field_data {
     my %param = @_;
-    my ($blog_id, $field_id, $datasource) = @param{qw( blog_id field_id datasource )};
+    my ($blog_id, $field_id, $field_type, $datasource) = @param{qw( blog_id field_id field_type datasource )};
     
     return _copy_custom_field_data_from_pseudofields(@_)
         if $datasource eq '_pseudo';
+    return _copy_asset_custom_fields_from_file(@_)
+        if $field_type eq 'file';
 
     # Find the class that represents that RF table.
     my $rf_pkg = join q{::}, 'RightFieldsTable', $field_id, "Blog$blog_id";
@@ -97,8 +118,7 @@ sub _copy_custom_field_data {
     my $dbh = $driver->rw_handle;
 
     my $meta_table = $driver->table_for($meta_pkg);
-    # TODO: vary the meta field based on the field we're converting
-    my @meta_fields = (qw( entry_id type ), 'vchar_idx');
+    my @meta_fields = (qw( entry_id type ), $meta_field_for_field_type{$field_type};
     @meta_fields = map { $dbd->db_column_name($meta_table, $_) } @meta_fields;
 
     my $rf_table = $driver->table_for($rf_pkg);
@@ -156,10 +176,9 @@ sub convert_rf2cf {
         $datasource_for_blog{$blog_id} = $fields_data->{datasource};
         my $fields = $fields_data->{cols};
         FIELD: while (my ($field_id, $field_data) = each %$fields) {
-            # Entry fields only.
             # TODO: less so for other field types.
             next FIELD if !$field_data->{type}
-                || $field_data->{type} ne 'entry';
+                || !$custom_type_for_right_type{type};
 
             my %field;
             $field{$_} = $field_data->{$_} for qw( label weblog category_ids );
