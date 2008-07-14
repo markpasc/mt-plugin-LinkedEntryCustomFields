@@ -173,37 +173,51 @@ sub convert_rf2cf {
     
     # Upgrade duplicates to global fields.
     FIELD_BY_ID: while (my ($field_id, $fields) = each %fields_by_id) {
-        # Leave fields that are only in one blog alone.
-        next FIELD_BY_ID if 1 == scalar keys %$fields;
-        
-        my ($first_field, @fields) = values %$fields;
-        # TODO: vary data based on field type.
-        for my $datum (qw( label weblog category_ids tag )) {
-            my $first_value = $first_field->{$datum};
-            for my $next_field (@fields) {
-                my $next_value = $next_field->{$datum};
-                next FIELD_BY_ID if  defined $first_value && !defined $next_value;
-                next FIELD_BY_ID if !defined $first_value &&  defined $next_value;
-                next FIELD_BY_ID if  defined $first_value
-                    && $first_value ne $next_value;
+        my $make_global = 1;
+
+        if (1 == scalar keys %$fields) {
+            # Leave fields in only one blog in only one blog.
+            $make_global = 0;
+        }
+        else {
+            my ($first_field, @fields) = values %$fields;
+            # TODO: vary data based on field type.
+            DATUM: for my $datum (qw( label weblog category_ids tag )) {
+                my $first_value = $first_field->{$datum};
+                for my $next_field (@fields) {
+                    my $next_value = $next_field->{$datum};
+                    $are_identical &&=  defined $first_value && !defined $next_value        ? 0
+                                     : !defined $first_value &&  defined $next_value        ? 0
+                                     :  defined $first_value && $first_value ne $next_value ? 0
+                                     :                                                        1
+                                     ;
+                    last DATUM if !$are_identical;
+                }
             }
         }
-        
-        # Huh, everything matched. Make this a global field.
-        # TODO: Delete the value from each of their %fields_by_blog groups, using blog_id member.
-        # TODO: Assign first_field to blog_id=0 group. Or have a separate set of global fields?
+                
+        if ($make_global) {
+            _make_custom_field(
+                blog_id  => 0,
+                field_id => $field_id,
+                data     => $first_field,
+            );
+            next FIELD_BY_ID;
+        }
+
+        while (my ($blog_id, $field_data) = keys %$fields) {
+            _make_custom_field(
+                blog_id    => $blog_id,
+                field_id   => $field_id,
+                field_data => $field_data,
+            );
+        }
     }
     
     # Make corresponding custom fields.
     while (my ($blog_id, $fields) = each %fields_for_blog) {
+        my $datasource = $datasource_for_blog{$blog_id};
         while (my ($field_id, $field_data) = each %$fields) {
-            _make_custom_field(
-                blog_id  => $blog_id,
-                field_id => $field_id,
-                data     => $field_data,
-            );
-            
-            my $datasource = $datasource_for_blog{$blog_id};
             _copy_custom_field_data(
                 blog_id    => $blog_id,
                 field_id   => $field_id,
