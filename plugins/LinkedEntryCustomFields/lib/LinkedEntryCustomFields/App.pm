@@ -223,9 +223,6 @@ sub convert_rf2cf {
         $fields_def->key =~ m{ \A blog_(\d+) }xms or next FIELDS;
         my $blog_id = $1;
         
-
-            if $fields_def->data
-        
         my $fields_data = $fields_def->data;
         $datasource_for_blog{$blog_id} = $fields_data->{datasource};
         my $fields = $fields_data->{cols};
