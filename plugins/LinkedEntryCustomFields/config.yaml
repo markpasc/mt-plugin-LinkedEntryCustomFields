@@ -14,6 +14,7 @@ applications:
             convert_rf2cf:   $LinkedEntryCustomFields::LinkedEntryCustomFields::Convert::convert_rf2cf
         callbacks:
             template_param.edit_field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::inject_addl_field_settings
+            template_param.list_field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::inject_field_list_page_actions
             cms_pre_save.field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::presave_field
 customfield_types:
     entry:

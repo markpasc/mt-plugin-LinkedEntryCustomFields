@@ -37,6 +37,19 @@ sub inject_addl_field_settings {
     return 1;
 }
 
+sub inject_field_list_page_actions {
+    my ($cb, $app, $param, $tmpl) = @_;
+    return 1 if !$param->{page_actions};
+    return 1 if $tmpl->text =~ m{ PageActions }xmsi;
+
+    my $quickfilters = $tmpl->getElementById('quickfilters')
+        or return 1;
+    my $page_actions = $tmpl->createElement('app:PageActions');
+    $tmpl->insertAfter($page_actions, $quickfilters);
+
+    return 1;
+}
+
 sub presave_field {
     my ($cb, $app, $obj, $original) = @_;
 
