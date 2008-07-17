@@ -61,9 +61,13 @@ sub _make_custom_field {
             if $field_data->{category_ids};
     }
     elsif ($field_type eq 'menu' || $field_type eq 'radio') {
-        # The choices are already comma-delimited.
-        # TODO: strip out the keys from key=value choices, as CF doesn't support those.
         $options = $field_data->{choices};
+        # The choices are linefeed delimited, so convert them.
+        # TODO: prevent existing commas from becoming delimiters through judicious application of magic
+        $options =~ s{
+            (?: = [^\r\n]* )?    # possible display value
+            (?: ([\r\n]+) | \z)  # linefeed or EOS
+        }{ $1 ? q{,} : q{} }xmsge;
     }
 
     $cf->set_values({
