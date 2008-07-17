@@ -144,6 +144,10 @@ sub _copy_asset_custom_fields_from_file {
         my ($basename, undef, $ext) = File::Basename::fileparse($filepath, qr/[A-Za-z0-9]+$/);
         MT->log("Filepath $filepath splits into $basename and $ext parts") if DEBUG();
 
+        my $fileurl  = $field_data->{url_path};
+        $fileurl .= '/' if $fileurl !~ m{ / \z }xms;
+        $fileurl .= $file_data->{$field_id};
+
         my $asset_class = MT->model('asset')->handler_for_file($filepath);
         my $asset = $asset_class->load({
             file_path => $filepath,
@@ -154,8 +158,9 @@ sub _copy_asset_custom_fields_from_file {
         $asset->set_values({
             blog_id   => $blog_id,
             file_path => $filepath,
-            file_name => $basename,
+            file_name => $basename . $ext,
             file_ext  => $ext,
+            url       => $fileurl,
         });
         $asset->save or die $asset->errstr;
 
