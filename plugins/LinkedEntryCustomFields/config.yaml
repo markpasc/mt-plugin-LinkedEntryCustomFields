@@ -1,10 +1,10 @@
 name: Linked Entry Custom Fields
 id:   LinkedEntryCustomFields
 key:  LinkedEntryCustomFields
+description: Provides conversion of RightFields plugin data to Movable Type Custom Fields, including a Custom Field that lets you link entries to other entries.
 author_name: Six Apart, Ltd.
 author_link: http://www.sixapart.com/
 version: 1.0
-schema_version: 1
 
 applications:
     cms:
