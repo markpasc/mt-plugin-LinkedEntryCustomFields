@@ -65,8 +65,9 @@ sub _make_custom_field {
         # The choices are linefeed delimited, so convert them.
         # TODO: prevent existing commas from becoming delimiters through judicious application of magic
         $options =~ s{
+            \s*
             (?: = [^\r\n]* )?    # possible display value
-            (?: ([\r\n]+) | \z)  # linefeed or EOS
+            (?: ([\r\n]+) \s* | \z)  # linefeed or EOS
         }{ $1 ? q{,} : q{} }xmsge;
     }
 
@@ -190,10 +191,14 @@ sub _copy_custom_field_data_from_pseudofields {
         next DATA if !$data->{$field_id};
         my $meta_obj = $meta_pkg->new;
         # TODO: if this is a choice field, convert keys of key=value choice pairs into values
+        my $value = $data->{$field_id};
+        if ($field_type eq 'radio' || $field_type eq 'menu') {
+            $value =~ s{ \A \s+ | \s+ \z }{}xmsg;
+        }
         $meta_obj->set_values({
             entry_id    => $data_obj->key,
             type        => "field.$field_id",
-            $meta_field => $data->{$field_id},
+            $meta_field => $value,
         });
         $meta_obj->save
             or die "Could not save custom field version of field $field_id for entry #"
@@ -260,6 +265,11 @@ sub _copy_custom_field_data {
     my $id_col   = $dbd->db_column_name($rf_table, 'id');
     my $data_col = $dbd->db_column_name($rf_table, $field_id);
     
+    my $trim_data = $field_type eq 'radio' ? 1
+                  : $field_type eq 'menu'  ? 1
+                  :                          0
+                  ;
+
     # TODO: we should ignore fields that are already set, using INSERT IGNORE
     # on mysql or INSERT OR IGNORE on sqlite. but if we can't support it on
     # the other drivers, should we bother? should we delete conflicting data
@@ -267,8 +277,9 @@ sub _copy_custom_field_data {
     # TODO: generic multidatabase support with ORM loop?
     my $insert_sql = join q{ }, 'INSERT INTO', $meta_table,
         '(', join(q{, }, @meta_fields), ')',
-        'SELECT', $id_col, q{,}, q{?}, q{,}, $data_col, 'FROM',
-        $rf_table;
+        'SELECT', $id_col, q{,}, q{?}, q{,},
+        ($trim_data ? ('TRIM(', $data_col, ')') : ($data_col)),
+        'FROM', $rf_table;
     $dbh->do($insert_sql, {}, "field.$field_id")
         or die $dbh->errstr || $DBI::errstr;
 }
