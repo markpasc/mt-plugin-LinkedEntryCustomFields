@@ -6,18 +6,33 @@ use warnings;
 use constant DEBUG => 1;
 
 my %custom_type_for_right_type = (
-    entry => 'entry',
-    file  => 'asset',
-);
-
-my %meta_field_for_right_type = (
-    entry => 'vchar_idx',
+    text     => 'text',
+    textarea => 'textarea',
+    checkbox => 'checkbox',
+    date     => 'datetime',
+    file     => 'asset',
+    menu     => 'select',
+    radio    => 'radio',
+    entry    => 'entry',
 );
 
 my %field_data_for_right_type = (
-    entry => [ qw( weblog category_ids ) ],
-    file  => [ qw( filenames overwrite upload_path url_path ) ],
+    text     => [],
+    textarea => [],
+    checkbox => [],
+    date     => [],  # cf doesn't offer any options
+    file     => [ qw( filenames overwrite upload_path url_path ) ],
+    menu     => [ 'choices' ],
+    radio    => [ 'choices' ],
+    entry    => [ qw( weblog category_ids ) ],
 );
+
+sub _meta_field_for_right_type {
+    my ($type) = @_;
+    my $cf = MT->registry('customfield_types')->{$type};
+    return if !$cf;
+    return $cf->{column_def};
+}
 
 sub _make_custom_field {
     my %param = @_;
@@ -44,6 +59,11 @@ sub _make_custom_field {
         $options = $field_data->{weblog};
         $options = join q{,}, $field_data->{category_ids}
             if $field_data->{category_ids};
+    }
+    elsif ($field_type eq 'menu' || $field_type eq 'radio') {
+        # The choices are already comma-delimited.
+        # TODO: strip out the keys from key=value choices, as CF doesn't support those.
+        $options = $field_data->{choices};
     }
 
     $cf->set_values({
@@ -158,12 +178,14 @@ sub _copy_custom_field_data_from_pseudofields {
     my $meta_pkg = MT->model('entry')->meta_pkg;
     # TODO: really we should convert pseudofields en masse, i guess, to keep
     # from having to reiterate plugindata for every field for every blog.
-    my $meta_field = $meta_field_for_right_type{$field_type}
+    my $cf_type = $custom_type_for_right_type{$field_type}
         or die "Can't convert custom field data from unknown type $field_type\n";
+    my $meta_field = _meta_field_for_right_type($cf_type);
     DATA: while (my $data_obj = $data_iter->()) {
         my $data = $data_obj->data;
         next DATA if !$data->{$field_id};
         my $meta_obj = $meta_pkg->new;
+        # TODO: if this is a choice field, convert keys of key=value choice pairs into values
         $meta_obj->set_values({
             entry_id    => $data_obj->key,
             type        => "field.$field_id",
@@ -212,6 +234,8 @@ sub _copy_custom_field_data {
     
     return _copy_asset_custom_fields_from_file(%param)
         if $field_type eq 'file';
+    # TODO: if this is a choice field, convert keys of key=value choice pairs
+    # into values... by converting them loopily. or something.
     return _copy_custom_field_data_from_pseudofields(%param)
         if $datasource eq '_pseudo';
 
@@ -224,7 +248,8 @@ sub _copy_custom_field_data {
     my $dbh = $driver->rw_handle;
 
     my $meta_table = $driver->table_for($meta_pkg);
-    my @meta_fields = (qw( entry_id type ), $meta_field_for_right_type{$field_type});
+    my $cf_type = $custom_type_for_right_type{$field_type};
+    my @meta_fields = (qw( entry_id type ), _meta_field_for_right_type($cf_type));
     @meta_fields = map { $dbd->db_column_name($meta_table, $_) } @meta_fields;
 
     my $rf_table = $driver->table_for($rf_pkg);
