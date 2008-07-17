@@ -11,11 +11,18 @@ applications:
         methods:
             list_entry_mini: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::list_entry_mini
             select_entry:    $LinkedEntryCustomFields::LinkedEntryCustomFields::App::select_entry
-            convert_rf2cf:   $LinkedEntryCustomFields::LinkedEntryCustomFields::Convert::convert_rf2cf
         callbacks:
             template_param.edit_field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::inject_addl_field_settings
             template_param.list_field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::inject_field_list_page_actions
             cms_pre_save.field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::presave_field
+        page_actions:
+            list_field:
+                convert_rf2cf:
+                    label:      Convert RightFields to Custom Fields
+                    order:      900
+                    condition:  sub { !MT->app->blog }
+                    handler:    $LinkedEntryCustomFields::LinkedEntryCustomFields::Convert::convert_rf2cf
+                    permission: sys_admin
 customfield_types:
     entry:
         label: Entry

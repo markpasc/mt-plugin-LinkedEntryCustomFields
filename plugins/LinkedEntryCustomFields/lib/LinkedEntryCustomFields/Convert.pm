@@ -391,9 +391,11 @@ sub convert_rf2cf {
     }
     
     # Make corresponding custom fields.
+    my $fields_converted = 0;
     while (my ($blog_id, $fields) = each %fields_for_blog) {
         my $datasource = $datasource_for_blog{$blog_id};
         while (my ($field_id, $field_data) = each %$fields) {
+            $fields_converted++;
             _copy_custom_field_data(
                 blog_id    => $blog_id,
                 field_id   => $field_id,
@@ -403,7 +405,8 @@ sub convert_rf2cf {
         }
     }
     
-    return $app->return_to_dashboard( redirect => 1 );
+    $app->add_return_arg( converted => $fields_converted );
+    return $app->call_return();
 }
 
 1;
