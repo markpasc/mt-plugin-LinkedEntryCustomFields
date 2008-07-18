@@ -3,7 +3,7 @@ package LinkedEntryCustomFields::Convert;
 use strict;
 use warnings;
 
-use constant DEBUG => 1;
+use constant DEBUG => 0;
 
 my %custom_type_for_right_type = (
     text     => 'text',
