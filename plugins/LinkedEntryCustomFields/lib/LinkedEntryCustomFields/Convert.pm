@@ -49,7 +49,7 @@ sub _make_custom_field {
     
     # Make or update the corresponding custom field.
     my $cf = MT->model('field')->load({
-        blog_id  => $blog_id,
+        blog_id  => ($blog_id || [ \"is null", 0 ]),
         basename => $field_id,
     });
     $cf ||= MT->model('field')->new;
