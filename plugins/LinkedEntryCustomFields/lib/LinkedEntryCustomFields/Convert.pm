@@ -348,14 +348,21 @@ sub convert_rf2cf {
     FIELD_BY_ID: while (my ($field_id, $fields) = each %fields_by_id) {
         my $make_global = 1;
 
-        if (1 == scalar keys %$fields) {
+        my ($first_field, @fields) = values %$fields;
+        if (!@fields) {
             # Leave fields in only one blog in only one blog.
             $make_global = 0;
         }
+        elsif ($first_field->{type} eq 'file') {
+            # There's no such thing as a system-wide asset custom field.
+            $make_global = 0;
+        }
         else {
-            my ($first_field, @fields) = values %$fields;
-            # TODO: vary data based on field type.
-            DATUM: for my $datum (qw( label weblog category_ids tag )) {
+            # Compare the fields across all the important axes to see if they differ.
+            my @data = qw( type label tag );
+            my $type = $first_field->{type};
+            push @data, @{ $field_data_for_right_type{$type} || [] };
+            DATUM: for my $datum (@data) {
                 my $first_value = $first_field->{$datum};
                 $first_value = lc $first_value if $datum eq 'label';
                 for my $next_field (@fields) {
@@ -368,11 +375,10 @@ sub convert_rf2cf {
                                    ;
                     last DATUM if !$make_global;
                 }
-            }
+            }   
         }
 
         if ($make_global) {
-            my ($first_field) = values %$fields;
             _make_custom_field(
                 blog_id  => 0,
                 field_id => $field_id,
