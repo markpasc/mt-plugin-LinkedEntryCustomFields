@@ -78,7 +78,7 @@ sub _make_custom_field {
         basename => $field_id,
     });
     $cf->options($options) if defined $options;
-    $cf->blog_id($blog_id) if $blog_id;
+    $cf->blog_id($blog_id);
 
     my $tag = $field_data->{tag};
     $tag ||= lc join q{}, $cf->obj_type, 'data', $cf->name;
