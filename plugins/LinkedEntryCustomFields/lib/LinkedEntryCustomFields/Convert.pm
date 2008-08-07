@@ -27,6 +27,11 @@ my %field_data_for_right_type = (
     entry    => [ qw( weblog category_ids ) ],
 );
 
+my %insert_statement_for_ddl_class = (
+    'MT::ObjectDriver::DDL::mysql'  => 'INSERT IGNORE INTO',
+    'MT::ObjectDriver::DDL::SQLite' => 'INSERT OR IGNORE INTO',
+);
+
 sub _meta_field_for_right_type {
     my ($type) = @_;
     my $cf = MT->registry('customfield_types')->{$type};
@@ -283,12 +288,12 @@ sub _copy_custom_field_data {
                   :                          0
                   ;
 
-    # TODO: we should ignore fields that are already set, using INSERT IGNORE
-    # on mysql or INSERT OR IGNORE on sqlite. but if we can't support it on
-    # the other drivers, should we bother? should we delete conflicting data
-    # first from mt_entry_meta so the insert should succeed?
+    # TODO: should we instead delete conflicting data from mt_entry_meta so
+    # an INSERT without IGNORE should succeed?
     # TODO: generic multidatabase support with ORM loop?
-    my $insert_sql = join q{ }, 'INSERT INTO', $meta_table,
+    my $insert_stmt = $insert_statement_for_ddl_class{ $dbd->ddl_class }
+        || 'INSERT INTO';  # we'll have to error if we can't ignore conflicts
+    my $insert_sql = join q{ }, $insert_stmt, $meta_table,
         '(', join(q{, }, @meta_fields), ')',
         'SELECT', $id_col, q{,}, q{?}, q{,},
         ($trim_data ? ('TRIM(', $data_col, ')') : ($data_col)),
