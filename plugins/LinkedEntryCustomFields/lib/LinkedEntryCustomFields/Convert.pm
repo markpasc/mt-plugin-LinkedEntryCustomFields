@@ -343,7 +343,7 @@ sub convert_rf2cf {
             $fields_by_id   {$field_id}->{$blog_id}  = \%field;
         }
     }
-    
+
     # Upgrade duplicates to global fields.
     FIELD_BY_ID: while (my ($field_id, $fields) = each %fields_by_id) {
         my $make_global = 1;
