@@ -81,7 +81,15 @@ sub _make_custom_field {
     $cf->blog_id($blog_id);
 
     my $tag = $field_data->{tag};
-    $tag ||= lc join q{}, $cf->obj_type, 'data', $cf->name;
+    if (!$tag) {
+        my @possible_names = ($cf->name, $cf->basename, 'field');
+        my $tagsafe_name;
+        NAME: for my $name (@possible_names) {
+            $tagsafe_name = MT::Util::dirify($name, q{});
+            last NAME if $tagsafe_name;
+        }
+        $tag = lc join q{}, $cf->obj_type, 'data', $tagsafe_name;
+    }
     # TODO: ensure the tag is unique, since CF makes us.
     $cf->tag($tag);
 
