@@ -39,6 +39,25 @@ sub _meta_field_for_right_type {
     return $cf->{column_def};
 }
 
+sub _get_tag_map {
+    if (my $tagmap = MT->request('lecf_tag_map')) {
+        return $tagmap;
+    }
+
+    my %tag_map;
+    my $tagsets = MT->registry('tags');
+    TAGSET: while (my (undef, $tagset) = each %$tagsets) {
+        next TAGSET if 'HASH' ne ref $tagset;  # skip component obj if any
+        TAG: while (my ($tag, undef) = each %$tagset) {
+            next TAG if $tag eq 'plugin';
+            $tag_map{lc $tag} = 1;
+        }
+    }
+
+    MT->request('lecf_tag_map', \%tag_map);
+    return \%tag_map;
+}
+
 sub _make_custom_field {
     my %param = @_;
     my ($blog_id, $field_id, $field_data) = @param{qw( blog_id field_id data )};
@@ -93,9 +112,42 @@ sub _make_custom_field {
             $tagsafe_name = MT::Util::dirify($name, q{});
             last NAME if $tagsafe_name;
         }
-        $tag = lc join q{}, $cf->obj_type, 'data', $tagsafe_name;
+        $tag = join q{}, $cf->obj_type, 'data', $tagsafe_name;
     }
-    # TODO: ensure the tag is unique, since CF makes us.
+    $tag = lc $tag;
+
+    # Only check uniqueness against tags if the tag is new or the tag
+    # changed. Presumably we checked it last time if we saved it.
+    if (!$cf->id || $tag ne $cf->tag) {
+        my $tagmap = _get_tag_map();
+
+        my $i = 0;
+        my $tag_generator = sub {
+            if (!$i) {
+                $i = 1;
+                return $tag;
+            }
+
+            $i++;  # so first is 2
+            return substr($tag, 0, 250 - length $i) . $i;
+        };
+
+        TAG: while (my $possible_tag = $tag_generator->()) {
+            # We're already only checking if the tag is different from this
+            # field object's tag, so don't worry about it.
+            next TAG if $tagmap->{$possible_tag};
+            # However we may have saved a bunch of fields this request since
+            # the CF tags were generated, so check against db fields too.
+            next TAG if MT->model('field')->exist({
+                tag => $possible_tag,
+            });
+
+            # This tag is OK!
+            $tag = $possible_tag;
+            last TAG;
+        }
+    }
+
     $cf->tag($tag);
 
     $cf->save or die $cf->errstr;
