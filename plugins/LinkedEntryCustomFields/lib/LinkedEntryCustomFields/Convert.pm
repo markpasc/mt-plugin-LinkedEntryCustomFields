@@ -70,7 +70,7 @@ sub _make_custom_field {
         if DEBUG() && !$custom_type_for_right_type{$field_type};
     my $cf_type = $custom_type_for_right_type{$field_type}
         or return;
-    
+
     # Make or update the corresponding custom field.
     my $cf = MT->model('field')->load({
         blog_id  => ($blog_id || [ \"is null", 0 ]),
@@ -170,7 +170,7 @@ sub _copy_asset_custom_fields_from_file {
                 blog_id => $blog_id,
             }),
         });
-        
+
         $iter = sub {
             PDATA: while (my $pdata = $pdata_iter->()) {
                 my $field_value = $pdata->data->{$field_id};
@@ -247,9 +247,9 @@ sub _copy_custom_field_data_from_pseudofields {
     my %param = @_;
     my ($blog_id, $field_id, $field_data, $datasource) = @param{qw( blog_id field_id data datasource )};
     my $field_type = $field_data->{type};
-    
+
     my $data_iter = MT->model('plugindata')->load_iter({ plugin => 'RightFieldsPseudo' });
-    
+
     my $meta_pkg = MT->model('entry')->meta_pkg;
     # TODO: really we should convert pseudofields en masse, i guess, to keep
     # from having to reiterate plugindata for every field for every blog.
@@ -274,8 +274,8 @@ sub _copy_custom_field_data_from_pseudofields {
             or die "Could not save custom field version of field $field_id for entry #"
                 . $data_obj->key . ": " . $meta_obj->errstr;
     }
-    
-    return 1;    
+
+    return 1;
 }
 
 sub _make_rightfields_table_pkg {
@@ -310,7 +310,7 @@ sub _copy_custom_field_data {
     my %param = @_;
     my ($blog_id, $field_id, $field_data, $datasource) = @param{qw( blog_id field_id data datasource )};
     my $field_type = $field_data->{type};
-    
+
     return _copy_asset_custom_fields_from_file(%param)
         if $field_type eq 'file';
     # TODO: if this is a choice field, convert keys of key=value choice pairs
@@ -334,7 +334,7 @@ sub _copy_custom_field_data {
     my $rf_table = $driver->table_for($rf_pkg);
     my $id_col   = $dbd->db_column_name($rf_table, 'id');
     my $data_col = $dbd->db_column_name($rf_table, $field_id);
-    
+
     my $trim_data = $field_type eq 'radio' ? 1
                   : $field_type eq 'menu'  ? 1
                   :                          0
@@ -359,7 +359,7 @@ sub convert_rf2cf {
 
     # Look for RF field definitions.
     my $def_iter = MT->model('plugindata')->load_iter({ plugin => 'rightfields' });
-    
+
     my (@tags, @fields);
     DEF: while (my $def = $def_iter->()) {
         # Don't care about default settings, only the ones actually in use on blogs.
@@ -383,12 +383,12 @@ sub convert_rf2cf {
             $tags_for_fields{$blog_id}->{$field} = $tag_name;
         }
     }
-    
+
     my (%fields_for_blog, %fields_by_id, %datasource_for_blog);
     FIELDS: for my $fields_def (@fields) {
         $fields_def->key =~ m{ \A blog_(\d+) }xms or next FIELDS;
         my $blog_id = $1;
-        
+
         my $fields_data = $fields_def->data;
         $datasource_for_blog{$blog_id} = $fields_data->{datasource};
         my $fields = $fields_data->{cols};
@@ -403,7 +403,7 @@ sub convert_rf2cf {
             $field{$_} = $field_data->{$_} for qw( label type ), @$field_keys;
             $field{blog_id} = $blog_id;
             $field{tag} = $tags_for_fields{$blog_id}->{$field_id};
-            
+
             $fields_for_blog{$blog_id} ->{$field_id} = \%field;
             $fields_by_id   {$field_id}->{$blog_id}  = \%field;
         }
@@ -440,7 +440,7 @@ sub convert_rf2cf {
                                    ;
                     last DATUM if !$make_global;
                 }
-            }   
+            }
         }
 
         if ($make_global) {
@@ -460,7 +460,7 @@ sub convert_rf2cf {
             );
         }
     }
-    
+
     # Make corresponding custom fields.
     my $fields_converted = 0;
     while (my ($blog_id, $fields) = each %fields_for_blog) {
@@ -475,7 +475,7 @@ sub convert_rf2cf {
             );
         }
     }
-    
+
     $app->add_return_arg( converted => $fields_converted );
     return $app->call_return();
 }
