@@ -154,9 +154,11 @@ sub _make_custom_field {
 }
 
 sub _copy_asset_custom_fields_from_file {
-    my %param = @_;
+    my ($self, %param) = @_;
     my ($blog_id, $field_id, $field_data, $datasource) = @param{qw( blog_id field_id data datasource )};
     MT->log("Copying values of file RF $field_id to an asset CF") if DEBUG();
+
+    $self->progress($self->translate_escape('Converting data for file field "[_1]" to asset custom fields data...', $param{field_id}));
 
     my $iter;
     if ($datasource eq '_pseudo') {
@@ -240,13 +242,15 @@ sub _copy_asset_custom_fields_from_file {
                 . $file_data->{id} . ": " . $meta_obj->errstr;
     }
 
-    return 1;
+    return 0;
 }
 
 sub _copy_custom_field_data_from_pseudofields {
-    my %param = @_;
+    my ($self, %param) = @_;
     my ($blog_id, $field_id, $field_data, $datasource) = @param{qw( blog_id field_id data datasource )};
     my $field_type = $field_data->{type};
+
+    $self->progress($self->translate_escape('Converting data for field "[_1]" from plugindata to custom fields data...', $param{field_id}));
 
     my $data_iter = MT->model('plugindata')->load_iter({ plugin => 'RightFieldsPseudo' });
 
@@ -275,7 +279,7 @@ sub _copy_custom_field_data_from_pseudofields {
                 . $data_obj->key . ": " . $meta_obj->errstr;
     }
 
-    return 1;
+    return 0;
 }
 
 sub _make_rightfields_table_pkg {
@@ -306,17 +310,20 @@ sub _make_rightfields_table_pkg {
     return $rf_pkg;
 }
 
-sub _copy_custom_field_data {
-    my %param = @_;
+sub step_convert_data {
+    my ($self, %param) = @_;
+    return 0 if !%param;  # nothing to convert?
     my ($blog_id, $field_id, $field_data, $datasource) = @param{qw( blog_id field_id data datasource )};
     my $field_type = $field_data->{type};
 
-    return _copy_asset_custom_fields_from_file(%param)
+    return _copy_asset_custom_fields_from_file($self, %param)
         if $field_type eq 'file';
     # TODO: if this is a choice field, convert keys of key=value choice pairs
     # into values... by converting them loopily. or something.
-    return _copy_custom_field_data_from_pseudofields(%param)
+    return _copy_custom_field_data_from_pseudofields($self, %param)
         if $datasource eq '_pseudo';
+
+    $self->progress($self->translate_escape('Converting data for field "[_1]" to custom fields data...', $param{field_id}));
 
     my $rf_pkg = _make_rightfields_table_pkg(%param);
 
@@ -352,13 +359,17 @@ sub _copy_custom_field_data {
         'FROM', $rf_table;
     $dbh->do($insert_sql, {}, "field.$field_id")
         or die $dbh->errstr || $DBI::errstr;
+
+    return 0;
 }
 
-sub convert_rf2cf {
-    my $app = shift;
+sub step_convert_fields {
+    my ($self, %param) = @_;
 
     # Look for RF field definitions.
     my $def_iter = MT->model('plugindata')->load_iter({ plugin => 'rightfields' });
+
+    $self->progress($self->translate_escape('Discovering RightFields settings...'));
 
     my (@tags, @fields);
     DEF: while (my $def = $def_iter->()) {
@@ -367,6 +378,8 @@ sub convert_rf2cf {
         push @tags,   $def->clone if $def->key =~ m{ _tags \z }xms;
         push @fields, $def->clone if $def->key =~ m{ _extra \z }xms;
     }
+
+    $self->progress($self->translate_escape('Cataloguing RightFields tags...'));
 
     my %tags_for_fields;
     TAG: for my $tag_def (@tags) {
@@ -383,6 +396,8 @@ sub convert_rf2cf {
             $tags_for_fields{$blog_id}->{$field} = $tag_name;
         }
     }
+
+    $self->progress($self->translate_escape('Cataloguing RightFields fields...'));
 
     my (%fields_for_blog, %fields_by_id, %datasource_for_blog);
     FIELDS: for my $fields_def (@fields) {
@@ -408,6 +423,8 @@ sub convert_rf2cf {
             $fields_by_id   {$field_id}->{$blog_id}  = \%field;
         }
     }
+
+    $self->progress($self->translate_escape('Converting RightFields fields to custom fields...'));
 
     # Upgrade duplicates to global fields.
     FIELD_BY_ID: while (my ($field_id, $fields) = each %fields_by_id) {
@@ -462,12 +479,10 @@ sub convert_rf2cf {
     }
 
     # Make corresponding custom fields.
-    my $fields_converted = 0;
     while (my ($blog_id, $fields) = each %fields_for_blog) {
         my $datasource = $datasource_for_blog{$blog_id};
         while (my ($field_id, $field_data) = each %$fields) {
-            $fields_converted++;
-            _copy_custom_field_data(
+            $self->add_step('rf2cf_convert_data',
                 blog_id    => $blog_id,
                 field_id   => $field_id,
                 data       => $field_data,
@@ -476,8 +491,7 @@ sub convert_rf2cf {
         }
     }
 
-    $app->add_return_arg( converted => $fields_converted );
-    return $app->call_return();
+    return 0;  # done
 }
 
 1;

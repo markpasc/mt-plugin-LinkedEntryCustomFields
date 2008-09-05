@@ -6,6 +6,8 @@ author_name: Six Apart, Ltd.
 author_link: http://www.sixapart.com/
 version: 1.0
 
+schema_version: 1
+
 applications:
     cms:
         methods:
@@ -15,14 +17,6 @@ applications:
             template_param.edit_field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::inject_addl_field_settings
             template_param.list_field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::inject_field_list_page_actions
             cms_pre_save.field: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::presave_field
-        page_actions:
-            list_field:
-                convert_rf2cf:
-                    label:      Convert RightFields to Custom Fields
-                    order:      900
-                    condition:  sub { !MT->app->blog }
-                    handler:    $LinkedEntryCustomFields::LinkedEntryCustomFields::Convert::convert_rf2cf
-                    permission: sys_admin
 customfield_types:
     entry:
         label: Entry
@@ -32,3 +26,9 @@ customfield_types:
         column_def: vchar_idx
         no_default: 1
 tags: $LinkedEntryCustomFields::LinkedEntryCustomFields::App::load_customfield_tags
+upgrade_functions:
+    rf2cf_convert_fields:
+        handler: $LinkedEntryCustomFields::LinkedEntryCustomFields::Convert::step_convert_fields
+    rf2cf_convert_data:
+        version_limit: 0
+        handler: $LinkedEntryCustomFields::LinkedEntryCustomFields::Convert::step_convert_data
