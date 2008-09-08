@@ -129,7 +129,7 @@ sub _make_custom_field {
             }
 
             $i++;  # so first is 2
-            return substr($tag, 0, 250 - length $i) . $i;
+            return join q{_}, substr($tag, 0, 249 - length $i), $i;
         };
 
         TAG: while (my $possible_tag = $tag_generator->()) {
