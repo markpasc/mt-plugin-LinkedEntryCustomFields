@@ -135,10 +135,6 @@ sub select_entry {
     return $tmpl;
 }
 
-sub convert_rf2cf {
-    my $app = shift;
-}
-
 sub _tags_for_field {
     my ($field) = @_;
     return if $field->type ne 'entry';
