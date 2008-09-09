@@ -441,7 +441,7 @@ sub step_convert_fields {
         }
         else {
             # Compare the fields across all the important axes to see if they differ.
-            my @data = qw( type label tag );
+            my @data = qw( type tag );
             my $type = $first_field->{type};
             push @data, @{ $field_data_for_right_type{$type} || [] };
             DATUM: for my $datum (@data) {
@@ -455,12 +455,35 @@ sub step_convert_fields {
                                    :  defined $first_value && $first_value ne $next_value ? 0
                                    :                                                        1
                                    ;
-                    last DATUM if !$make_global;
+                    if (!$make_global) {
+                        my $app = MT->instance;
+                        my $pl = MT->component('LinkedEntryCustomFields');
+                        $app->log({
+                            message => $pl->translate(
+                                'Duplicating [_1] field across blogs: fields are different in their [_2]',
+                                $first_field->{label},
+                                $datum,
+                            ),
+                            level    => MT::Log->INFO(),
+                            class    => 'system',
+                            category => 'upgrade',
+                        });
+                        last DATUM;
+                    }
                 }
             }
         }
 
         if ($make_global) {
+            # Give the global field the most common label.
+            my %label_usage;
+            for my $field (values %$fields) {
+                $label_usage{ $field->{label} }++;
+            }
+            my ($common_label) = sort {
+                $label_usage{$b} <=> $label_usage{$a} } keys %label_usage;
+            local $first_field->{label} = $common_label;
+
             _make_custom_field(
                 blog_id  => 0,
                 field_id => $field_id,
