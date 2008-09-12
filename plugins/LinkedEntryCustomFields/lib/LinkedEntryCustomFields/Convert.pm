@@ -178,6 +178,7 @@ sub _copy_asset_custom_fields_from_file {
                 my $field_value = $pdata->data->{$field_id};
                 MT->log('Skipping pdata #' . $pdata->id . " for field $field_id due to undefined value") if DEBUG() && !defined $field_value;
                 next PDATA if !defined $field_value;
+                next PDATA if !$field_value;
                 return {
                     id        => $pdata->key,
                     $field_id => $field_value,
