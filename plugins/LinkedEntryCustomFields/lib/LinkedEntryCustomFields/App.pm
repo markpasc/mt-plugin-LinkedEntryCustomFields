@@ -146,8 +146,10 @@ sub _tags_for_field {
 
             # What entry are we after?
             require CustomFields::Template::ContextHandlers;
+            # handlers no longer take a component as first argument in 4.25+
+            my @plugin = ($MT::VERSION < 4.25) ? MT->component('commercial') : ();
             my $entry_id = CustomFields::Template::ContextHandlers::_hdlr_customfield_value(
-                MT->component('commercial'), @_)
+                @plugin, @_)
                 or return $ctx->_hdlr_pass_tokens_else($args, $cond);
             my $entry = MT->model('entry')->load($entry_id)
                 or return $ctx->_hdlr_pass_tokens_else($args, $cond);
