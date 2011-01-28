@@ -52,6 +52,7 @@ sub inject_field_list_page_actions {
 
 sub presave_field {
     my ($cb, $app, $obj, $original) = @_;
+    return 1 unless $obj->type eq 'entry';
 
     my $blog_id = $app->param('entry_blog') || '0';
     my $cats    = $app->param('entry_categories') || '';

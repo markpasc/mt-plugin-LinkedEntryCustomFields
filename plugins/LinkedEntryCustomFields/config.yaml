@@ -4,7 +4,7 @@ key:  LinkedEntryCustomFields
 description: Provides conversion of RightFields plugin data to Movable Type Custom Fields, including a Custom Field that lets you link entries to other entries.<br /><br />To convert your data, please go to your <a href="?__mode=list_field">system-level Custom Fields preferences</a> and click the link on the sidebar which says "Convert RightFields to Custom Fields".
 author_name: Six Apart, Ltd.
 author_link: http://www.sixapart.com/
-version: 1.01
+version: 1.0.2
 
 schema_version: 1
 
